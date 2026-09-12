@@ -1,0 +1,1534 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-manager/publish-event",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "910c560b-78e8-4a47-8c02-0d00260e45fb",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2064,
+        -512
+      ],
+      "webhookId": "e1ac52bc-486e-4528-9a60-b9d4df187790",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Ei2zqPtVSkiZl7In",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nif (!['facebook', 'linkedin'].includes(String(body.platform))) throw new Error('Unsupported platform');\nif (!String(body.content || '').trim()) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\nconst media = Array.isArray(body.media) ? body.media.filter((item) => item?.url) : [];\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform: body.platform, content: String(body.content), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
+      },
+      "id": "e14d16cb-0849-4c03-94ad-1ee2156402fb",
+      "name": "Chuẩn hóa dữ liệu publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1792,
+        -512
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Mode: Run Once for Each Item\n// Input: mỗi item đến từ \"Parse Image URLs\", đã có sẵn image_url, image_index, image_count\n\nlet imageUrl = $json.image_url;\n\n// Clean the URL\nimageUrl = imageUrl.trim();\n\n// Convert common sharing links to direct download links\n// Google Drive\nif (imageUrl.includes('drive.google.com/file/d/')) {\n  const fileIdMatch = imageUrl.match(/\\/d\\/([^\\/]+)/);\n  if (fileIdMatch) {\n    imageUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;\n  }\n}\n\n// Dropbox - change dl=0 to dl=1\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) {\n  imageUrl = imageUrl.replace('dl=0', 'dl=1');\n}\n\n// Imgur - convert to direct image link\nif (imageUrl.includes('imgur.com/') && !imageUrl.includes('i.imgur.com')) {\n  imageUrl = imageUrl.replace('imgur.com/', 'i.imgur.com/') + '.jpg';\n}\n\n// OneDrive/SharePoint\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) {\n  imageUrl = imageUrl.split('?')[0] + '?download=1';\n}\n\nreturn {\n  json: {\n    original_url: $json.image_url,\n    direct_download_url: imageUrl,\n    image_index: $json.image_index,\n    image_count: $json.image_count\n  }\n};"
+      },
+      "id": "6f60a468-4ed7-4d42-8249-fd6a7126884f",
+      "name": "Convert Share Link to Download Link",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -688,
+        -720
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "40c4f5c0-c4ff-4421-946e-e1b8e0e604e9",
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.media.length }}",
+              "rightValue": 0
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "188d936b-ca71-4755-9828-744f80a2df46",
+      "name": "Validate Image URL",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1376,
+        -672
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first()?.json || {};\nconst legacyRaw = payload.linkHinhAnh || payload.content?.linkHinhAnh || '';\nconst legacyUrls = String(legacyRaw).split(/[,\\n]+/).map((url) => url.trim()).filter(Boolean);\nconst media = Array.isArray(payload.media) && payload.media.length ? payload.media : legacyUrls.map((url) => ({ url }));\nconst uniqueMedia = [...new Map(media.filter((item) => item?.url).map((item) => [item.url, item])).values()];\nif (!uniqueMedia.length) return [{ json: { ...payload, image_url: '', image_index: -1, image_count: 0, images: [] } }];\nreturn uniqueMedia.map((image, index) => ({ json: { ...payload, image_url: image.url, image_index: index, image_count: uniqueMedia.length, images: uniqueMedia } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        -736
+      ],
+      "id": "b0858339-a9eb-48bb-956b-76925e0c205e",
+      "name": "Parse Image URLs"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9516b53e-9ff9-4ff9-906b-bb30b132ba1f",
+              "leftValue": "={{ $json.image_count }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        160,
+        -1152
+      ],
+      "id": "01f0daf2-2ee1-4625-8b50-e0a3249533f8",
+      "name": "Check Multi Image"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.direct_download_url || $json.output.download_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "28eda848-a8e7-4747-865d-05d1d2bbc02b",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -480,
+        -704
+      ],
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U",
+          "mode": "list",
+          "cachedResultName": "AI Content Planner - DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 329397093,
+          "mode": "list",
+          "cachedResultName": "Content",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit#gid=496268296"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Chuẩn hóa dữ liệu publish').item.json.postId }}",
+            "TrangThaiChay": "Lỗi Download Image",
+            "TrangThai": "Failed",
+            "NgayTao": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "NgayCapNhat": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Owner",
+              "displayName": "Owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ChuDe",
+              "displayName": "ChuDe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LoaiNoiDung",
+              "displayName": "LoaiNoiDung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GiongDieu",
+              "displayName": "GiongDieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "DoiTuongMucTieu",
+              "displayName": "DoiTuongMucTieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkThamKhao",
+              "displayName": "LinkThamKhao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GhiChuThem",
+              "displayName": "GhiChuThem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkHinhAnh",
+              "displayName": "LinkHinhAnh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "CoAnhKhong",
+              "displayName": "CoAnhKhong",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TrangThai",
+              "displayName": "TrangThai",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkBaiViet",
+              "displayName": "LinkBaiViet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "NgayDang",
+              "displayName": "NgayDang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LichChay",
+              "displayName": "LichChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TrangThaiChay",
+              "displayName": "TrangThaiChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayTao",
+              "displayName": "NgayTao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayCapNhat",
+              "displayName": "NgayCapNhat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "86e273ee-bf3a-45c1-b60f-592bdf3d3aac",
+      "name": "Update status Failed - Download Image",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        -208,
+        -608
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qorJcMirsGCP1LOt",
+          "name": "Google Sheets account Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U",
+          "mode": "list",
+          "cachedResultName": "AI Content Planner - DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 329397093,
+          "mode": "list",
+          "cachedResultName": "Content",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit#gid=496268296"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Chuẩn hóa dữ liệu publish').item.json.postId }}",
+            "TrangThai": "Finished",
+            "LinkBaiViet": "=https://www.linkedin.com/feed/update/{{ $json.urn }}",
+            "NgayDang": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "LichChay": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "NgayCapNhat": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "NgayTao": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "TrangThaiChay": "Hoàn Thành"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Owner",
+              "displayName": "Owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ChuDe",
+              "displayName": "ChuDe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LoaiNoiDung",
+              "displayName": "LoaiNoiDung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GiongDieu",
+              "displayName": "GiongDieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "DoiTuongMucTieu",
+              "displayName": "DoiTuongMucTieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkThamKhao",
+              "displayName": "LinkThamKhao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GhiChuThem",
+              "displayName": "GhiChuThem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkHinhAnh",
+              "displayName": "LinkHinhAnh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "CoAnhKhong",
+              "displayName": "CoAnhKhong",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TrangThai",
+              "displayName": "TrangThai",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkBaiViet",
+              "displayName": "LinkBaiViet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayDang",
+              "displayName": "NgayDang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LichChay",
+              "displayName": "LichChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TrangThaiChay",
+              "displayName": "TrangThaiChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayTao",
+              "displayName": "NgayTao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayCapNhat",
+              "displayName": "NgayCapNhat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "92c8c1bf-d899-475a-98b4-eda7b4108d7c",
+      "name": "Update Post Status Finished",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        864,
+        -528
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qorJcMirsGCP1LOt",
+          "name": "Google Sheets account Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "46e8311b-ef84-4e79-9d89-d8207521e5c6",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.platform }}",
+              "rightValue": "linkedin"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e226c203-2a4b-4da6-ade5-77dabc476421",
+      "name": "Check platform",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1584,
+        -496
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        624,
+        -1088
+      ],
+      "id": "d7fdfe0d-527d-43ae-b0ee-17207335b72d",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.value.uploadUrl }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        -1088
+      ],
+      "id": "b161c9a7-a63e-486a-af51-a0f7fb5c605e",
+      "name": "Upload Binary"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    image: $('Merge').item.json.value.image\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1136,
+        -1088
+      ],
+      "id": "2d844ba2-7c0f-4dbd-984f-262ea80734da",
+      "name": "Extract Image URN"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "image",
+              "renameField": true,
+              "outputFieldName": "images"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        -1088
+      ],
+      "id": "0e05b4d2-4fe5-4ba0-9857-e02d37bc30a5",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Linkedin-Version",
+              "value": "202601"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"author\": \"urn:li:person:{{ $('Oauth get info Linkedin').first().json.sub }}\",\n  \"commentary\": {{ JSON.stringify($('Webhook').item.json.body.content.final_post )}},\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false,\n  \"content\": {\n    \"multiImage\": {\n      \"images\": {{ JSON.stringify($json.images.map(id => ({ id }))) }}\n    }\n  }\n}\n",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1552,
+        -1088
+      ],
+      "onError": "continueErrorOutput",
+      "id": "ebfb611b-5af3-47d1-9745-2bb2fc7b9d22",
+      "name": "Create Multi-Image Post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U",
+          "mode": "list",
+          "cachedResultName": "AI Content Planner - DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 329397093,
+          "mode": "list",
+          "cachedResultName": "Content",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1nZ9cmaHRbaBzttyhm3tarI2EvKypUpF4ZkAxRKhen3U/edit#gid=496268296"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Chuẩn hóa dữ liệu publish').item.json.postId }}",
+            "TrangThai": "Finished",
+            "LinkBaiViet": "=https://www.linkedin.com/feed/update/{{ $json.headers['x-restli-id'] }}",
+            "NgayDang": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "LichChay": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "NgayTao": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "NgayCapNhat": "={{ $now.setZone('Asia/Ho_Chi_Minh').format('yyyy-MM-dd HH:mm:ss') }}",
+            "TrangThaiChay": "Hoàn Thành"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Owner",
+              "displayName": "Owner",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "ChuDe",
+              "displayName": "ChuDe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LoaiNoiDung",
+              "displayName": "LoaiNoiDung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GiongDieu",
+              "displayName": "GiongDieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "DoiTuongMucTieu",
+              "displayName": "DoiTuongMucTieu",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkThamKhao",
+              "displayName": "LinkThamKhao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "GhiChuThem",
+              "displayName": "GhiChuThem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "LinkHinhAnh",
+              "displayName": "LinkHinhAnh",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "CoAnhKhong",
+              "displayName": "CoAnhKhong",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "TrangThai",
+              "displayName": "TrangThai",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkBaiViet",
+              "displayName": "LinkBaiViet",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayDang",
+              "displayName": "NgayDang",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LichChay",
+              "displayName": "LichChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TrangThaiChay",
+              "displayName": "TrangThaiChay",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayTao",
+              "displayName": "NgayTao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "NgayCapNhat",
+              "displayName": "NgayCapNhat",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "0f9a7248-4e02-494e-a410-f82779a3aad2",
+      "name": "Update Post Status to Posted",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1760,
+        -1088
+      ],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qorJcMirsGCP1LOt",
+          "name": "Google Sheets account Test"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        -896
+      ],
+      "id": "ca31b6f2-d765-4040-aa1d-bf9e469369a9",
+      "name": "Oauth get info Linkedin",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Linkedin-Version",
+              "value": "202601"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"initializeUploadRequest\": {\n    \"owner\": \"urn:li:person:{{ $json.sub }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        -896
+      ],
+      "id": "04090f64-5afb-4336-ac57-3cca36447559",
+      "name": "Initialize Upload",
+      "alwaysOutputData": false,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "person": "KXKYbYytUS",
+        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
+        "shareMediaCategory": "=IMAGE",
+        "additionalFields": {}
+      },
+      "id": "fe774186-a1f8-47c9-866a-ce4e1bbcc6de",
+      "name": "Create a post with single image",
+      "type": "n8n-nodes-base.linkedIn",
+      "onError": "continueErrorOutput",
+      "position": [
+        368,
+        -768
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "person": "KXKYbYytUS",
+        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
+        "additionalFields": {}
+      },
+      "id": "d4e19c7d-26ec-46e4-857d-a4b1e37eb65e",
+      "name": "Create a post  no image",
+      "type": "n8n-nodes-base.linkedIn",
+      "onError": "continueErrorOutput",
+      "position": [
+        -912,
+        -416
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media.filter((item) => item?.url) : [];\nif (!media.length) return [{ json: { ...payload, image_count: 0, image_url: '' } }];\nreturn media.map((item, index) => ({ json: { ...payload, image_url: item.url, image_index: index, image_count: media.length } }));"
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb001",
+      "name": "Prepare Facebook Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1360, -240]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "typeValidation": "strict", "version": 2 },
+          "conditions": [{ "id": "fb-image-check", "leftValue": "={{ $json.image_count }}", "rightValue": 0, "operator": { "type": "number", "operation": "gt" } }],
+          "combinator": "and"
+        }
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb002",
+      "name": "Facebook Has Images",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-1120, -240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/me/photos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": { "parameters": [
+          { "name": "url", "value": "={{ $json.image_url }}" },
+          { "name": "published", "value": "false" }
+        ] },
+        "options": { "response": { "response": { "fullResponse": true } } }
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb003",
+      "name": "Facebook Upload Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-880, -160],
+      "onError": "continueErrorOutput",
+      "credentials": { "facebookGraphApi": { "name": "Facebook account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.body || $json;\nif (!response.id) throw new Error('Facebook upload did not return photo id');\nreturn { json: { ...$('Prepare Facebook Images').item.json, photo_id: response.id } };"
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb004",
+      "name": "Extract Facebook Photo ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-640, -160]
+    },
+    {
+      "parameters": { "fieldsToAggregate": { "fieldToAggregate": [{ "fieldToAggregate": "photo_id", "renameField": true, "outputFieldName": "photo_ids" }] }, "options": {} },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb005",
+      "name": "Aggregate Facebook Photo IDs",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [-400, -160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst ids = Array.isArray($json.photo_ids) ? $json.photo_ids : [];\nreturn { json: { ...payload, attached_media: ids.map((id) => ({ media_fbid: id })) } };"
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb006",
+      "name": "Build Facebook Post Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, -160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/me/feed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $json.content, attached_media: $json.attached_media }) }}",
+        "options": { "response": { "response": { "fullResponse": true } } }
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb007",
+      "name": "Publish Facebook Post With Images",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [80, -160],
+      "onError": "continueErrorOutput",
+      "credentials": { "facebookGraphApi": { "name": "Facebook account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/me/feed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": { "parameters": [{ "name": "message", "value": "={{ $json.content }}" }] },
+        "options": { "response": { "response": { "fullResponse": true } } }
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb008",
+      "name": "Publish Facebook Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-880, -320],
+      "onError": "continueErrorOutput",
+      "credentials": { "facebookGraphApi": { "name": "Facebook account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTENT_MANAGER_CALLBACK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-publish-key", "value": "={{ $env.N8N_PUBLISH_CALLBACK_KEY }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb009",
+      "name": "Callback Backend Published",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [560, -240],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTENT_MANAGER_CALLBACK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-publish-key", "value": "={{ $env.N8N_PUBLISH_CALLBACK_KEY }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "f9c0f4f2-0d0f-4cd3-8b5f-7abf4e1fb010",
+      "name": "Callback Backend Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [560, 80],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa dữ liệu publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn hóa dữ liệu publish": {
+      "main": [
+        [
+          {
+            "node": "Check platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Share Link to Download Link": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Image URL": {
+      "main": [
+        [
+          {
+            "node": "Parse Image URLs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post  no image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Image URLs": {
+      "main": [
+        [
+          {
+            "node": "Convert Share Link to Download Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Multi Image": {
+      "main": [
+        [
+          {
+            "node": "Oauth get info Linkedin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post with single image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Check Multi Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update status Failed - Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update status Failed - Download Image": {
+      "main": [[{ "node": "Callback Backend Failed", "type": "main", "index": 0 }]]
+    },
+    "Check platform": {
+      "main": [
+        [
+          {
+            "node": "Validate Image URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Facebook Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Facebook Images": {
+      "main": [[{ "node": "Facebook Has Images", "type": "main", "index": 0 }]]
+    },
+    "Facebook Has Images": {
+      "main": [
+        [{ "node": "Facebook Upload Photo", "type": "main", "index": 0 }],
+        [{ "node": "Publish Facebook Text", "type": "main", "index": 0 }]
+      ]
+    },
+    "Facebook Upload Photo": {
+      "main": [
+        [{ "node": "Extract Facebook Photo ID", "type": "main", "index": 0 }],
+        [{ "node": "Callback Backend Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Facebook Photo ID": {
+      "main": [[{ "node": "Aggregate Facebook Photo IDs", "type": "main", "index": 0 }]]
+    },
+    "Aggregate Facebook Photo IDs": {
+      "main": [[{ "node": "Build Facebook Post Payload", "type": "main", "index": 0 }]]
+    },
+    "Build Facebook Post Payload": {
+      "main": [[{ "node": "Publish Facebook Post With Images", "type": "main", "index": 0 }]]
+    },
+    "Publish Facebook Post With Images": {
+      "main": [
+        [{ "node": "Callback Backend Published", "type": "main", "index": 0 }],
+        [{ "node": "Callback Backend Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Publish Facebook Text": {
+      "main": [
+        [{ "node": "Callback Backend Published", "type": "main", "index": 0 }],
+        [{ "node": "Callback Backend Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Callback Backend Published": { "main": [[]] },
+    "Callback Backend Failed": { "main": [[]] },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Upload Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Binary": {
+      "main": [
+        [
+          {
+            "node": "Extract Image URN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image URN": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Create Multi-Image Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Multi-Image Post": {
+      "main": [
+        [
+          {
+            "node": "Update Post Status to Posted",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Callback Backend Published",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          { "node": "Callback Backend Failed", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Oauth get info Linkedin": {
+      "main": [
+        [
+          {
+            "node": "Initialize Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Upload": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Create a post with single image": {
+      "main": [
+        [
+          {
+            "node": "Update Post Status Finished",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Callback Backend Published",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          { "node": "Callback Backend Failed", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Create a post  no image": {
+      "main": [
+        [
+          {
+            "node": "Update Post Status Finished",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Callback Backend Published",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          { "node": "Callback Backend Failed", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  }
+}

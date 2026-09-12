@@ -1,0 +1,85 @@
+{
+  "name": "Content Manager - Trigger Scheduled Publish",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-manager/publish-scheduled",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "publish-webhook",
+      "name": "Webhook nhận lịch đăng",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-900, 260],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Publish Webhook Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\nconst expectedKey = $env.N8N_PUBLISH_WEBHOOK_KEY;\nconst receivedKey = $json.headers?.['x-publish-key'] || $json.headers?.['X-Publish-Key'];\nif (expectedKey && receivedKey !== expectedKey) throw new Error('Invalid publish webhook key');\nif (!body.postId || !body.scheduledAt || !body.platform || !body.content) throw new Error('Missing publish payload');\nreturn [{ json: { ...body, postId: String(body.postId), scheduledAt: String(body.scheduledAt), media: Array.isArray(body.media) ? body.media : [], mediaUrls: Array.isArray(body.mediaUrls) ? body.mediaUrls : [] } }];"
+      },
+      "id": "validate-publish-request",
+      "name": "Kiểm tra yêu cầu đăng",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-660, 260]
+    },
+    {
+      "parameters": {
+        "resume": "specificTime",
+        "dateTime": "={{ $json.scheduledAt }}",
+        "options": {}
+      },
+      "id": "wait-until-scheduled",
+      "name": "Chờ đúng thời gian đăng",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [-420, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.N8N_PUBLISH_TARGET_WEBHOOK_URL }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-publish-key",
+              "value": "={{ $env.N8N_TARGET_WEBHOOK_KEY || '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "forward-existing-publisher",
+      "name": "Gọi webhook publish hiện có",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [320, 260]
+    }
+  ],
+  "connections": {
+    "Webhook nhận lịch đăng": { "main": [[{ "node": "Kiểm tra yêu cầu đăng", "type": "main", "index": 0 }]] },
+    "Kiểm tra yêu cầu đăng": { "main": [[{ "node": "Chờ đúng thời gian đăng", "type": "main", "index": 0 }]] },
+    "Chờ đúng thời gian đăng": { "main": [[{ "node": "Gọi webhook publish hiện có", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {},
+  "versionId": "publish-trigger-v1",
+  "meta": { "templateCredsSetupCompleted": false }
+}

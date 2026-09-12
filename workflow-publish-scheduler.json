@@ -1,0 +1,189 @@
+{
+  "name": "Content Manager - Publish Scheduled Posts",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "publish-schedule-trigger",
+      "name": "Schedule mỗi phút",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-900, 260]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH due AS (\n  SELECT sp.id\n  FROM social_posts sp\n  WHERE sp.status = 'scheduled'\n    AND sp.scheduled_at <= NOW()\n  ORDER BY sp.scheduled_at ASC\n  FOR UPDATE SKIP LOCKED\n  LIMIT 20\n)\nUPDATE social_posts sp\nSET status = 'publishing', retry_count = sp.retry_count + 1, updated_at = NOW()\nFROM due\nWHERE sp.id = due.id\nRETURNING sp.id, sp.platform, sp.content, sp.retry_count, (SELECT ma.file_url FROM media_assets ma WHERE ma.content_id = sp.content_id ORDER BY ma.sort_order ASC LIMIT 1) AS image_url;",
+        "options": {}
+      },
+      "id": "claim-due-posts",
+      "name": "Lấy bài đến lịch và khóa xử lý",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [-660, 260]
+    },
+    {
+      "parameters": {
+        "mode": "rules",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{ $json.platform }}", "rightValue": "facebook", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "facebook"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  { "leftValue": "={{ $json.platform }}", "rightValue": "linkedin", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "linkedin"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "route-platform",
+      "name": "Rẽ nhánh theo nền tảng",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [-420, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/' + ($env.FACEBOOK_GRAPH_VERSION || 'v20.0') + '/' + $env.FACEBOOK_GROUP_ID + ($json.image_url ? '/photos' : '/feed') }}",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "message", "value": "={{ $json.content }}" },
+            { "name": "url", "value": "={{ $json.image_url || '' }}" },
+            { "name": "access_token", "value": "={{ $env.FACEBOOK_GROUP_ACCESS_TOKEN }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "publish-facebook-group",
+      "name": "Đăng Facebook Group",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [-140, 160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{ 'Bearer ' + $env.LINKEDIN_ACCESS_TOKEN }}" },
+            { "name": "LinkedIn-Version", "value": "={{ $env.LINKEDIN_VERSION || '202501' }}" },
+            { "name": "X-Restli-Protocol-Version", "value": "2.0.0" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ author: $env.LINKEDIN_AUTHOR_URN, commentary: $json.content, visibility: 'PUBLIC', distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] }, lifecycleState: 'PUBLISHED', isReshareByAuthor: false }) }}",
+        "options": {}
+      },
+      "id": "publish-linkedin",
+      "name": "Đăng LinkedIn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [-140, 360]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE social_posts SET status = 'published', published_at = NOW(), error_message = NULL, external_post_id = COALESCE('{{ $json.id || '' }}', external_post_id) WHERE id = '{{ $('Lấy bài đến lịch và khóa xử lý').item.json.id }}';"
+      },
+      "id": "mark-facebook-published",
+      "name": "Đánh dấu Facebook đã đăng",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [120, 80]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE social_posts SET status = 'published', published_at = NOW(), error_message = NULL, external_post_id = COALESCE('{{ $json.id || $json.post_id || '' }}', external_post_id) WHERE id = '{{ $('Lấy bài đến lịch và khóa xử lý').item.json.id }}';"
+      },
+      "id": "mark-linkedin-published",
+      "name": "Đánh dấu LinkedIn đã đăng",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE social_posts SET status = 'failed', error_message = 'Facebook publish failed' WHERE id = '{{ $('Lấy bài đến lịch và khóa xử lý').item.json.id }}';"
+      },
+      "id": "mark-facebook-failed",
+      "name": "Đánh dấu Facebook lỗi",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [120, 180]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE social_posts SET status = 'failed', error_message = 'LinkedIn publish failed' WHERE id = '{{ $('Lấy bài đến lịch và khóa xử lý').item.json.id }}';"
+      },
+      "id": "mark-linkedin-failed",
+      "name": "Đánh dấu LinkedIn lỗi",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [120, 400]
+    }
+  ],
+  "connections": {
+    "Schedule mỗi phút": { "main": [[{ "node": "Lấy bài đến lịch và khóa xử lý", "type": "main", "index": 0 }]] },
+    "Lấy bài đến lịch và khóa xử lý": { "main": [[{ "node": "Rẽ nhánh theo nền tảng", "type": "main", "index": 0 }]] },
+    "Rẽ nhánh theo nền tảng": {
+      "main": [
+        [{ "node": "Đăng Facebook Group", "type": "main", "index": 0 }],
+        [{ "node": "Đăng LinkedIn", "type": "main", "index": 0 }]
+      ]
+    },
+    "Đăng Facebook Group": {
+      "main": [
+        [{ "node": "Đánh dấu Facebook đã đăng", "type": "main", "index": 0 }],
+        [{ "node": "Đánh dấu Facebook lỗi", "type": "main", "index": 0 }]
+      ]
+    },
+    "Đăng LinkedIn": {
+      "main": [
+        [{ "node": "Đánh dấu LinkedIn đã đăng", "type": "main", "index": 0 }],
+        [{ "node": "Đánh dấu LinkedIn lỗi", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {},
+  "versionId": "publish-scheduler-v1",
+  "meta": { "templateCredsSetupCompleted": false }
+}

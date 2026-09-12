@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  editor
+  viewer
+}
+
+enum ContentStatus {
+  pending
+  generating
+  draft
+  approved
+  rejected
+  archived
+}
+
+enum Platform {
+  facebook
+  linkedin
+}
+
+enum SocialPostStatus {
+  draft
+  approved
+  scheduled
+  publishing
+  published
+  failed
+  cancelled
+}
+
+enum StorageType {
+  google_drive
+  s3
+  minio
+  cloudinary
+}
+
+model User {
+  id        String            @id @default(uuid()) @db.Uuid
+  name      String
+  email     String            @unique
+  role      UserRole          @default(viewer)
+  versions  ContentVersion[]
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  @@map("users")
+}
+
+model ContentItem {
+  id           String           @id @default(uuid()) @db.Uuid
+  source       String
+  sourceRowId  String           @map("source_row_id")
+  employeeName String           @map("employee_name")
+  originalNote String           @map("original_note") @db.Text
+  status       ContentStatus    @default(pending)
+  media        MediaAsset[]
+  versions     ContentVersion[]
+  socialPosts  SocialPost[]
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  @@unique([source, sourceRowId])
+  @@index([sourceRowId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("content_items")
+}
+
+model MediaAsset {
+  id          String      @id @default(uuid()) @db.Uuid
+  contentId   String      @map("content_id") @db.Uuid
+  fileName    String      @map("file_name")
+  fileUrl     String      @map("file_url") @db.Text
+  storageType StorageType @map("storage_type")
+  mimeType    String?     @map("mime_type")
+  sortOrder   Int         @default(0) @map("sort_order")
+  content     ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  @@index([contentId])
+  @@map("media_assets")
+}
+
+model ContentVersion {
+  id        String      @id @default(uuid()) @db.Uuid
+  contentId String      @map("content_id") @db.Uuid
+  platform  Platform
+  content   String      @db.Text
+  version   Int
+  createdBy String?     @map("created_by") @db.Uuid
+  item      ContentItem @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  author    User?       @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt DateTime    @default(now()) @map("created_at")
+  @@unique([contentId, platform, version])
+  @@index([contentId])
+  @@map("content_versions")
+}
+
+model SocialPost {
+  id             String           @id @default(uuid()) @db.Uuid
+  contentId      String           @map("content_id") @db.Uuid
+  platform       Platform
+  content        String           @db.Text
+  status         SocialPostStatus  @default(draft)
+  scheduledAt    DateTime?        @map("scheduled_at")
+  publishedAt    DateTime?        @map("published_at")
+  externalPostId String?          @map("external_post_id")
+  errorMessage   String?          @map("error_message") @db.Text
+  retryCount     Int              @default(0) @map("retry_count")
+  item           ContentItem      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  logs           PublishLog[]
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  @@index([status])
+  @@index([platform])
+  @@index([scheduledAt])
+  @@index([contentId])
+  @@unique([contentId, platform])
+  @@map("social_posts")
+}
+
+model PublishLog {
+  id           String     @id @default(uuid()) @db.Uuid
+  socialPostId String     @map("social_post_id") @db.Uuid
+  platform     Platform
+  status       String
+  request      Json?      @map("request_payload")
+  response     Json?      @map("response_payload")
+  errorMessage String?    @map("error_message") @db.Text
+  socialPost   SocialPost @relation(fields: [socialPostId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  @@index([socialPostId])
+  @@map("publish_logs")
+}
