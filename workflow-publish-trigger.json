@@ -6,47 +6,56 @@
         "httpMethod": "POST",
         "path": "content-manager/publish-scheduled",
         "authentication": "headerAuth",
-        "responseMode": "onReceived",
         "options": {}
       },
-      "id": "publish-webhook",
+      "id": "3d4324a7-e7df-4052-8fe1-5849f971ef16",
       "name": "Webhook nhận lịch đăng",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [-900, 260],
+      "position": [
+        176,
+        -144
+      ],
+      "webhookId": "4bb783c1-f25b-43ff-b3af-d32c93cd42b5",
       "credentials": {
         "httpHeaderAuth": {
-          "id": "",
-          "name": "Publish Webhook Key"
+          "id": "JCaSm9d7GASyfmT6",
+          "name": "Header Auth account triiger nhận lịch đăng"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "const body = $json.body || $json;\nconst expectedKey = $env.N8N_PUBLISH_WEBHOOK_KEY;\nconst receivedKey = $json.headers?.['x-publish-key'] || $json.headers?.['X-Publish-Key'];\nif (expectedKey && receivedKey !== expectedKey) throw new Error('Invalid publish webhook key');\nif (!body.postId || !body.scheduledAt || !body.platform || !body.content) throw new Error('Missing publish payload');\nreturn [{ json: { ...body, postId: String(body.postId), scheduledAt: String(body.scheduledAt), media: Array.isArray(body.media) ? body.media : [], mediaUrls: Array.isArray(body.mediaUrls) ? body.mediaUrls : [] } }];"
+        "jsCode": "const body = $json.body || $json;\n\n// Header Auth của Webhook đã xác thực x-publish-key trước khi node này chạy.\nif (!body.postId || !body.scheduledAt || !body.platform || !String(body.content || '').trim()) {\n  throw new Error('Missing publish payload');\n}\n\nconst platform = String(body.platform).toLowerCase();\nif (!['facebook', 'linkedin'].includes(platform)) {\n  throw new Error('Unsupported platform');\n}\n\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  return url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n};\n\nconst media = (Array.isArray(body.media) ? body.media : [])\n  .map((item) => ({ ...item, url: cleanUrl(item?.url || item?.originalUrl) }))\n  .filter((item) => item.url);\n\nreturn [{\n  json: {\n    ...body,\n    postId: String(body.postId),\n    platform,\n    scheduledAt: new Date(body.scheduledAt).toISOString(),\n    media,\n    mediaUrls: media.map((item) => item.url),\n  },\n}];"
       },
-      "id": "validate-publish-request",
+      "id": "a132abca-c74c-4867-8bb1-ce8bc1927ff6",
       "name": "Kiểm tra yêu cầu đăng",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-660, 260]
+      "position": [
+        416,
+        -144
+      ]
     },
     {
       "parameters": {
         "resume": "specificTime",
-        "dateTime": "={{ $json.scheduledAt }}",
-        "options": {}
+        "dateTime": "={{ $json.scheduledAt }}"
       },
-      "id": "wait-until-scheduled",
+      "id": "67f6f5f4-ec02-47e9-89f0-2ca5876f13a4",
       "name": "Chờ đúng thời gian đăng",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [-420, 260]
+      "position": [
+        656,
+        -144
+      ],
+      "webhookId": "f4c8dfa7-9214-42be-b47d-abe21731eccc"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.N8N_PUBLISH_TARGET_WEBHOOK_URL }}",
+        "url": "https://n8n.epcb2.espitek.com/webhook/content-manager/publish-event",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -56,7 +65,7 @@
             },
             {
               "name": "x-publish-key",
-              "value": "={{ $env.N8N_TARGET_WEBHOOK_KEY || '' }}"
+              "value": "epcb-publish-secret-2026"
             }
           ]
         },
@@ -65,21 +74,55 @@
         "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       },
-      "id": "forward-existing-publisher",
+      "id": "16485f19-0073-4186-8161-35d765df6e96",
       "name": "Gọi webhook publish hiện có",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [320, 260]
+      "position": [
+        880,
+        -144
+      ]
     }
   ],
   "connections": {
-    "Webhook nhận lịch đăng": { "main": [[{ "node": "Kiểm tra yêu cầu đăng", "type": "main", "index": 0 }]] },
-    "Kiểm tra yêu cầu đăng": { "main": [[{ "node": "Chờ đúng thời gian đăng", "type": "main", "index": 0 }]] },
-    "Chờ đúng thời gian đăng": { "main": [[{ "node": "Gọi webhook publish hiện có", "type": "main", "index": 0 }]] }
+    "Webhook nhận lịch đăng": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra yêu cầu đăng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra yêu cầu đăng": {
+      "main": [
+        [
+          {
+            "node": "Chờ đúng thời gian đăng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chờ đúng thời gian đăng": {
+      "main": [
+        [
+          {
+            "node": "Gọi webhook publish hiện có",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "pinData": {},
-  "active": false,
-  "settings": {},
-  "versionId": "publish-trigger-v1",
-  "meta": { "templateCredsSetupCompleted": false }
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  }
+
 }

@@ -61,8 +61,19 @@ export async function PATCH(
       });
       const webhookUrl = process.env.N8N_PUBLISH_WEBHOOK_URL;
       const webhookKey = process.env.N8N_PUBLISH_WEBHOOK_KEY;
-      if (webhookUrl && scheduledPost) {
-        void fetch(webhookUrl, {
+      if (!webhookUrl) {
+        console.error("N8N_PUBLISH_WEBHOOK_URL is not configured");
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Chưa cấu hình URL scheduler của n8n.",
+          },
+          { status: 503 },
+        );
+      }
+
+      if (scheduledPost) {
+        const webhookResponse = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -82,7 +93,25 @@ export async function PATCH(
             })),
             mediaUrls: scheduledPost.item.media.map((media) => media.fileUrl),
           }),
-        }).catch((error) => console.error("Failed to notify n8n publish webhook", error));
+          signal: AbortSignal.timeout(15_000),
+        });
+
+        if (!webhookResponse.ok) {
+          const responseText = await webhookResponse.text().catch(() => "");
+          console.error("n8n publish scheduler rejected request", {
+            status: webhookResponse.status,
+            responseText,
+            webhookUrl,
+          });
+          return NextResponse.json(
+            {
+              success: false,
+              error: `n8n scheduler từ chối yêu cầu (${webhookResponse.status}).`,
+              details: responseText.slice(0, 500),
+            },
+            { status: 502 },
+          );
+        }
       }
     }
 

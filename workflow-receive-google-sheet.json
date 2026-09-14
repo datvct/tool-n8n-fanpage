@@ -12,13 +12,13 @@
         },
         "options": {}
       },
-      "id": "8cbcbf24-c3c1-4d5e-883f-a41cc60ca881",
+      "id": "825d2983-8c16-4487-bf91-14c50d2cb4fc",
       "name": "Cấp quyền public ảnh Drive",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -1088,
-        4896
+        -3312,
+        4320
       ],
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -31,7 +31,11 @@
       "parameters": {
         "pollTimes": {
           "item": [
-            {}
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
           ]
         },
         "documentId": {
@@ -48,13 +52,13 @@
         "event": "rowAdded",
         "options": {}
       },
-      "id": "1f4a8739-c2ea-463d-90f2-e79972252537",
+      "id": "4d01435c-3a15-498e-89d6-17184c412791",
       "name": "Google Sheets Trigger - Row Added",
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
       "position": [
-        -2288,
-        4880
+        -4512,
+        4304
       ],
       "credentials": {
         "googleSheetsTriggerOAuth2Api": {
@@ -67,13 +71,13 @@
       "parameters": {
         "jsCode": "const row = $json._row || {};\nconst images = row.images || [];\nif (!images.length) return [];\nreturn images.map((image, index) => ({ json: { ...$json, file_id: image.fileId || '', file_name: image.fileName || `google-drive-image-${index + 1}`, original_url: image.originalUrl || image.previewUrl || '', image_index: index, image_count: images.length } }));"
       },
-      "id": "d859c184-c843-4e26-9433-9b39f78f4d9e",
+      "id": "d6dd4644-c3e6-41f0-a781-4b0e2b0b5916",
       "name": "Tách từng URL ảnh",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1440,
-        4880
+        -3664,
+        4304
       ]
     },
     {
@@ -99,26 +103,26 @@
         },
         "options": {}
       },
-      "id": "09d4e0c3-05ca-446f-8294-1dadc41edcd7",
+      "id": "f5350df6-72ba-4dbb-8c14-2b4dc317caa6",
       "name": "Có ảnh để tải?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -1584,
-        5056
+        -3808,
+        4480
       ]
     },
     {
       "parameters": {
         "jsCode": "return [{ json: { _row: $json._row || {}, images: [] } }];"
       },
-      "id": "181dc4d9-0a21-40ca-ad72-299e0e0943d3",
+      "id": "06c45320-cecf-4b11-afe9-cf4d23e9148a",
       "name": "Không có ảnh",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1360,
-        5280
+        -3584,
+        4704
       ]
     },
     {
@@ -126,13 +130,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "let imageUrl = String($json.original_url || '').trim();\nconst driveId = imageUrl.match(/(?:open\\?id=|uc\\?(?:export=[^&]+&)?id=|thumbnail\\?id=|file\\/d\\/|[?&]id=)([A-Za-z0-9_-]+)/)?.[1] || String($json.file_id || '').trim();\nif (driveId) imageUrl = `https://drive.google.com/uc?export=download&id=${driveId}`;\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) imageUrl = imageUrl.replace('dl=0', 'dl=1');\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) imageUrl = imageUrl.split('?')[0] + '?download=1';\nreturn { json: { ...$json, file_id: driveId, direct_download_url: imageUrl, preview_url: driveId ? `https://drive.google.com/uc?export=view&id=${driveId}` : imageUrl } };"
       },
-      "id": "94835c48-5c4a-4887-a98f-5bfd4cd10d36",
+      "id": "04813a66-83a0-492a-be73-1c4ebd37344a",
       "name": "Đổi link chia sẻ thành link tải",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1280,
-        4912
+        -3504,
+        4336
       ]
     },
     {
@@ -146,13 +150,13 @@
           }
         }
       },
-      "id": "26c953cd-f8b0-49f9-8f70-715d6aadedbb",
+      "id": "8336d352-f98f-4461-989c-dbf6dc27e778",
       "name": "Download Image - Kiểm tra binary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -880,
-        4880
+        -3104,
+        4304
       ]
     },
     {
@@ -177,13 +181,13 @@
         "builtInTools": {},
         "options": {}
       },
-      "id": "616dac68-31e3-4e5b-bb72-1858f7f0e733",
+      "id": "fe5a7bb7-1c32-4862-8ade-44cbafb80990",
       "name": "AI tạo Facebook và LinkedIn",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
       "position": [
-        -1600,
-        4672
+        -3824,
+        4096
       ],
       "credentials": {
         "openAiApi": {
@@ -196,39 +200,39 @@
       "parameters": {
         "jsCode": "const row = $('Chuẩn hóa row và nền tảng').first().json._row || {};\nconst aiItem = $input.first()?.json || {};\n\n// Lấy text từ cấu trúc output của OpenAI\nlet raw = '';\n\nif (Array.isArray(aiItem.output)) {\n  raw = aiItem.output\n    .flatMap(msg => msg.content || [])\n    .filter(content => content.type === 'output_text')\n    .map(content => content.text || '')\n    .join('\\n');\n}\n\n// fallback nếu sau này format output thay đổi\nif (!raw) {\n  raw = String(\n    aiItem.output_text ||\n    aiItem.response ||\n    aiItem.text ||\n    ''\n  );\n}\n\n// Xóa ```json ... ``` nếu có\nraw = raw\n  .replace(/^```json\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/\\s*```$/i, '')\n  .trim();\n\nlet parsed = {};\n\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  // fallback: tìm JSON object trong text\n  try {\n    const match = raw.match(/\\{[\\s\\S]*\\}/);\n    parsed = match ? JSON.parse(match[0]) : {};\n  } catch {\n    parsed = {};\n  }\n}\n\nreturn [\n  {\n    json: {\n      _row: row,\n      fb_content: String(parsed.facebook || '').trim(),\n      li_content: String(parsed.linkedin || '').trim(),\n    }\n  }\n];"
       },
-      "id": "68ec1d7a-073c-413b-9702-5c071a935f00",
+      "id": "0d16daae-273a-4f0e-9c23-e3ddb3285c32",
       "name": "Parse JSON AI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1168,
-        4672
+        -3392,
+        4096
       ]
     },
     {
       "parameters": {
         "jsCode": "const data = $input.first()?.json || {};\nconst row = data._row || {};\nreturn [{ json: { sourceRowId: row.sourceRowId, employeeName: row.employeeName, originalNote: row.note, images: data.images || [], facebookContent: data.fb_content || '', linkedinContent: data.li_content || '', sheetRow: row.sheetRow } }];"
       },
-      "id": "cdceeb7f-a65f-4b02-b7ac-7656476dcfc0",
+      "id": "eb228bfd-9f1d-455b-8a12-aa3d9787eef0",
       "name": "Tạo payload PostgreSQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        32,
-        4928
+        -2192,
+        4352
       ]
     },
     {
       "parameters": {
         "jsCode": "const sourceItems = $('Đổi link chia sẻ thành link tải').all();\n\nconst first = sourceItems[0]?.json || {};\nconst row = first._row || {};\n\nconst images = sourceItems\n  .map((item, index) => {\n    const source = item.json || {};\n\n    const fileId =\n      source.file_id ||\n      row.images?.[index]?.fileId ||\n      '';\n\n    const fileName =\n      source.file_name ||\n      row.images?.[index]?.fileName ||\n      `google-drive-image-${index + 1}`;\n\n    // Tự tạo link preview Google Drive\n    const url = fileId\n      ? `https://drive.google.com/file/d/${fileId}/preview`\n      : '';\n\n    return {\n      fileId,\n      fileName,\n      url\n    };\n  })\n  .filter(image => image.fileId);\n\nreturn [\n  {\n    json: {\n      _row: row,\n      images\n    }\n  }\n];"
       },
-      "id": "db0056ae-b35d-4905-8699-3dd420877790",
+      "id": "ee6cbe80-7e3a-42a7-ade6-dac81fd4e43a",
       "name": "Tập hợp ảnh đã tải",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -688,
-        4928
+        -2912,
+        4352
       ]
     },
     {
@@ -237,19 +241,19 @@
         "combineBy": "combineByPosition",
         "options": {}
       },
-      "id": "54803360-8240-45fd-b8ae-d89fffb55678",
+      "id": "59569092-b23c-4769-908a-69728e7286fc",
       "name": "Gộp AI và ảnh",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -192,
-        4928
+        -2416,
+        4352
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://91d4-14-224-216-170.ngrok-free.app/api/contents/import",
+        "url": "https://834f-14-224-216-170.ngrok-free.app/api/contents/import",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -268,13 +272,13 @@
         "jsonBody": "={{ JSON.stringify({ sourceRowId: $json.sourceRowId, employeeName: $json.employeeName, originalNote: $json.originalNote, images: $json.images, facebookContent: $json.facebookContent, linkedinContent: $json.linkedinContent }) }}",
         "options": {}
       },
-      "id": "958f1438-0a77-476b-bd93-081f4f95f695",
+      "id": "adcff46a-d28e-408b-8f0d-15d6c76b2b44",
       "name": "Lưu vào Content Manager PostgreSQL",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        256,
-        4928
+        -1968,
+        4352
       ]
     },
     {
@@ -381,13 +385,13 @@
         },
         "options": {}
       },
-      "id": "52d2a854-3d8e-43d9-bf7e-002ef1fb7107",
+      "id": "9f04fc5c-eb04-4781-9c87-904f7b2bf4e5",
       "name": "Đánh dấu Sheet Imported",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        688,
-        4928
+        -1536,
+        4352
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -400,13 +404,13 @@
       "parameters": {
         "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const row = item.json || {};\n\n  const rawImages = String(\n    row['Hình ảnh công việc'] ||\n    row.linkHinhAnh ||\n    row.images ||\n    ''\n  ).trim();\n\n  const note = String(\n    row['Ghi chú công việc'] ||\n    row['Ghi chú'] ||\n    row.note ||\n    ''\n  ).trim();\n\n  const platformRaw = String(\n    row['Nền tảng đăng'] ||\n    row.platform ||\n    ''\n  ).toLowerCase();\n\n  const hasFacebook = /facebook|fanpage/.test(platformRaw);\n  const hasLinkedIn = /linkedin/.test(platformRaw);\n\n  const imagePattern =\n    /https?:\\/\\/drive\\.google\\.com\\/(?:open\\?id=|file\\/d\\/)([A-Za-z0-9_-]+)/g;\n\n  const ids = [...rawImages.matchAll(imagePattern)]\n    .map((match) => match[1]);\n\n  const images = [...new Set(ids)].map((fileId, index) => ({\n    fileId,\n    fileName: `google-drive-image-${index + 1}`,\n    originalUrl: `https://drive.google.com/open?id=${fileId}`,\n    previewUrl: `https://drive.google.com/file/d/${fileId}/preview`,\n  }));\n\n  const sourceRowId = String(\n    row['Dấu thời gian'] ||\n    row.Timestamp ||\n    row.timestamp ||\n    row.row_number ||\n    `${note}-${rawImages}`\n  ).trim();\n\n  const employeeName = String(\n    row['Tên nhân viên'] ||\n    row['Tên'] ||\n    row.Username ||\n    row['Email address'] ||\n    'Chưa xác định'\n  ).trim();\n\n  // QUAN TRỌNG: copy dữ liệu, không truyền row trực tiếp\n  const sheetRow = { ...row };\n\n  item.json._row = {\n    sourceRowId,\n    employeeName,\n    note,\n\n    platform:\n      hasFacebook && hasLinkedIn\n        ? 'both'\n        : hasFacebook\n          ? 'facebook'\n          : hasLinkedIn\n            ? 'linkedin'\n            : 'both',\n\n    targetFB:\n      hasFacebook || (!hasFacebook && !hasLinkedIn),\n\n    targetLI:\n      hasLinkedIn || (!hasFacebook && !hasLinkedIn),\n\n    sheetRow,\n    imageLink: rawImages,\n    images,\n  };\n\n  output.push(item);\n}\n\nreturn output;"
       },
-      "id": "a7f1e033-962b-4f4d-b0f2-a43c65d50e44",
+      "id": "3903900a-7035-43dc-9f73-d516062c59b2",
       "name": "Chuẩn hóa row và nền tảng",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1840,
-        4880
+        -4064,
+        4304
       ]
     },
     {
@@ -438,10 +442,10 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.3,
       "position": [
-        -2064,
-        4880
+        -4288,
+        4304
       ],
-      "id": "c9b57b23-bf27-4cb1-b102-5a547a0901bd",
+      "id": "16e47be8-e5d6-45d7-96d0-4a022aa43a82",
       "name": "Filter"
     }
   ],
