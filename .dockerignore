@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.git
+.env
+.env.*
+!.env.example
+*.log
+Dockerfile*
+docker-compose*.yml
+README.md
+CONTENT_MANAGER_README.md
+WEBSITE_AUTOMATION.md
+workflow-*.json
+tsconfig.tsbuildinfo
+.DS_Store
