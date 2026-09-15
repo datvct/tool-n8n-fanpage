@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ContentItem,
   Platform,
+  PostType,
   SocialPost,
   ContentStatus,
 } from "@/lib/content-types";
@@ -37,10 +38,41 @@ const statusLabels: Record<ContentStatus, string> = {
 const platformLabels: Record<Platform, string> = {
   facebook: "Facebook",
   linkedin: "LinkedIn",
+  youtube: "YouTube",
+};
+const postTypeLabels: Record<PostType, string> = {
+  post: "Bài viết thường",
+  facebook_reel: "Facebook Reel",
+  youtube_short: "YouTube Short",
+  youtube_video: "YouTube video thường",
 };
 
 function isImageSource(value: string) {
   return value.startsWith("http") || value.startsWith("/api/media");
+}
+
+function isVideoSource(value: string) {
+  return value.startsWith("http") || value.startsWith("/api/media");
+}
+
+function truncateText(value: string, maxLength: number) {
+  const text = value.trim();
+  return text.length > maxLength
+    ? `${text.slice(0, maxLength).trimEnd()}...`
+    : text;
+}
+
+function getPostDisplayTitle(post: SocialPost, fallback = "Chưa có tiêu đề") {
+  const title = post.platform === "youtube" ? post.title?.trim() : "";
+  return title || post.content.trim() || fallback;
+}
+
+function getContentPlatforms(item: ContentItem) {
+  return [...new Set(
+    item.posts.map(
+      (post) => postTypeLabels[post.postType] || platformLabels[post.platform],
+    ),
+  )].join(" · ") || "Chưa chọn nền tảng";
 }
 
 type View = "dashboard" | "contents" | "calendar" | "published" | "failed";
@@ -478,19 +510,31 @@ function Dashboard({
                           className="content-link"
                           href={`/content/${item.id}`}
                         >
-                          <strong>{item.note.slice(0, 44)}...</strong>
+                          <span className="recent-title-list">
+                            {item.posts.length ? (
+                              item.posts.map((post) => (
+                                <span className="recent-title-item" key={post.id}>
+                                  <small>
+                                    {postTypeLabels[post.postType] || platformLabels[post.platform]}
+                                  </small>
+                                  <strong>
+                                    {truncateText(
+                                      getPostDisplayTitle(post, item.note || "Chưa có tiêu đề"),
+                                      48,
+                                    )}
+                                  </strong>
+                                </span>
+                              ))
+                            ) : (
+                              <strong>{truncateText(item.note || "Chưa có tiêu đề", 58)}</strong>
+                            )}
+                          </span>
                         </Link>
                         <br />
                         <span className="subtle">{item.createdAt}</span>
                       </td>
                       <td>{item.employee}</td>
-                      <td>
-                        {item.posts.map((post) => (
-                          <span className="subtle" key={post.id}>
-                            {platformLabels[post.platform]}{" "}
-                          </span>
-                        ))}
-                      </td>
+                      <td className="subtle">{getContentPlatforms(item)}</td>
                       <td>
                         <span
                           className={`badge ${item.posts.some((post) => post.status === "failed") ? "failed" : item.posts[0].status}`}
@@ -527,7 +571,7 @@ function Dashboard({
                   </div>
                   <div>
                     <h3>
-                      {platformLabels[post.platform]}{" "}
+                      {postTypeLabels[post.postType] || platformLabels[post.platform]}{" "}
                       <span className="subtle">· 09:30</span>
                     </h3>
                     <p className="subtle">{post.employee}</p>
@@ -588,10 +632,12 @@ function ContentList({
               item.posts.map((post) => (
                 <tr key={post.id}>
                   <td>
-                    <strong>{post.content.slice(0, 48)}...</strong>
+                    <strong>{truncateText(getPostDisplayTitle(post), 48)}</strong>
                   </td>
                   <td>{item.employee}</td>
-                  <td>{platformLabels[post.platform]}</td>
+              <td>
+                {postTypeLabels[post.postType] || platformLabels[post.platform]}
+              </td>
                   <td>
                     <span className={`badge ${post.status}`}>
                       {statusLabels[post.status]}
@@ -649,6 +695,7 @@ function DetailView({
   const post = selected.posts.find((item) => item.platform === platform) ?? {
     id: "",
     platform,
+    postType: "post" as const,
     content: "",
     status: "draft" as const,
   };
@@ -713,7 +760,7 @@ function DetailView({
       </section>
       <section className="panel">
         <div className="tabs">
-          {(["facebook", "linkedin"] as Platform[]).map((item) => (
+          {(["facebook", "linkedin", "youtube"] as Platform[]).map((item) => (
             <button
               className={platform === item ? "active" : ""}
               key={item}
@@ -814,6 +861,7 @@ export function DetailViewPro({
   const post = selected.posts.find((item) => item.platform === platform) ?? {
     id: "",
     platform,
+    postType: "post" as const,
     content: "",
     status: "draft" as const,
   };
@@ -875,8 +923,11 @@ export function DetailViewPro({
           <section className="context-section">
             <div className="context-heading">
               <ImageIcon size={16} />
-              <span>Hình ảnh đính kèm</span>
-              <small>{selected.images.length} ảnh</small>
+              <span>Media đính kèm</span>
+              <small>
+                {selected.images.length} ảnh
+                {selected.videos.length ? ` · ${selected.videos.length} video` : ""}
+              </small>
             </div>
             <div className="context-images">
               <AntImage.PreviewGroup>
@@ -897,6 +948,20 @@ export function DetailViewPro({
                 ))}
               </AntImage.PreviewGroup>
             </div>
+            {selected.videos.length > 0 && (
+              <div className="context-videos">
+                {selected.videos.map((video) => (
+                  <video
+                    className="context-video"
+                    key={video}
+                    src={isVideoSource(video) ? video : undefined}
+                    controls
+                    preload="metadata"
+                    aria-label="Video đính kèm"
+                  />
+                ))}
+              </div>
+            )}
           </section>
           <section className="context-section context-meta">
             <div>
@@ -918,7 +983,7 @@ export function DetailViewPro({
             <div>
               <span className="workspace-label-light">NỀN TẢNG ĐĂNG</span>
               <div className="platform-tabs">
-                {(["facebook", "linkedin"] as Platform[]).map((item) => (
+                {(["facebook", "linkedin", "youtube"] as Platform[]).map((item) => (
                   <button
                     className={platform === item ? "active" : ""}
                     key={item}
@@ -932,7 +997,7 @@ export function DetailViewPro({
                     }
                     onClick={() => setPlatform(item)}
                   >
-                    {item === "facebook" ? "Facebook" : "LinkedIn"}
+                    {platformLabels[item]}
                   </button>
                 ))}
               </div>
@@ -958,6 +1023,48 @@ export function DetailViewPro({
                 </div>
                 <span className="ai-tag">AI đã tạo</span>
               </div>
+              {hasPost && post.platform === "youtube" && (
+                <div className="video-copy-fields">
+                  <label>
+                    <span>
+                      {post.postType === "youtube_short"
+                        ? "Tiêu đề YouTube Short"
+                        : "Tiêu đề video thường"}
+                    </span>
+                    <input
+                      className="video-title-input"
+                      value={post.title ?? ""}
+                      maxLength={100}
+                      disabled={post.status === "published"}
+                      placeholder="Nhập tiêu đề video"
+                      onChange={(event) =>
+                        updatePost(selected.id, post.id, {
+                          title: event.target.value,
+                          status:
+                            post.status === "approved" ? "draft" : post.status,
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Mô tả video</span>
+                    <textarea
+                      className="video-description-input"
+                      value={post.description ?? ""}
+                      rows={4}
+                      disabled={post.status === "published"}
+                      placeholder="Nhập mô tả video"
+                      onChange={(event) =>
+                        updatePost(selected.id, post.id, {
+                          description: event.target.value,
+                          status:
+                            post.status === "approved" ? "draft" : post.status,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+              )}
               <textarea
                 className="pro-textarea"
                 value={post.content}
@@ -983,7 +1090,9 @@ export function DetailViewPro({
                   <p className="subtle">Hiển thị gần giống bài đăng thật</p>
                 </div>
                 <span className="preview-platform">
-                  {platform === "facebook" ? "Facebook" : "LinkedIn"}
+                  {hasPost
+                    ? postTypeLabels[post.postType] || platformLabels[platform]
+                    : platformLabels[platform]}
                 </span>
               </div>
               <div className={`social-preview ${platform}`}>
@@ -1002,8 +1111,22 @@ export function DetailViewPro({
                     ? post.content
                     : `Chưa có nội dung ${platformLabels[platform]}.`}
                 </div>
-                <div className="preview-image">
-                  {selected.images.length ? (
+                <div className={`preview-image ${selected.videos.length ? "has-video" : ""}`}>
+                  {selected.videos.length ? (
+                    <div className={`preview-video-wrap ${post.postType}`}>
+                      <video
+                        className="preview-video"
+                        src={isVideoSource(selected.videos[0]) ? selected.videos[0] : undefined}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        aria-label={postTypeLabels[post.postType]}
+                      />
+                      <span className="video-type-chip">
+                        {postTypeLabels[post.postType]}
+                      </span>
+                    </div>
+                  ) : selected.images.length ? (
                     <AntImage.PreviewGroup>
                       <div
                         className={`preview-images count-${Math.min(selected.images.length, 3)}`}
@@ -1021,9 +1144,15 @@ export function DetailViewPro({
                       </div>
                     </AntImage.PreviewGroup>
                   ) : (
-                    "Hình ảnh bài đăng"
+                    "Media bài đăng"
                   )}
                 </div>
+                {platform === "youtube" && hasPost && (
+                  <div className="youtube-preview-copy">
+                    <strong>{post.title || "Chưa có tiêu đề video"}</strong>
+                    <p>{post.description || "Chưa có mô tả video"}</p>
+                  </div>
+                )}
                 <div className="preview-actions">
                   <span>♡ Thích</span>
                   <span>◯ Bình luận</span>
@@ -1196,7 +1325,7 @@ function PostList({
             {posts.map((post) => (
               <tr key={post.id}>
                 <td>{platformLabels[post.platform]}</td>
-                <td>{post.content.slice(0, 55)}...</td>
+                <td>{truncateText(getPostDisplayTitle(post), 55)}</td>
                 <td>{post.employee}</td>
                 <td>
                   <span className={`badge ${post.status}`}>
@@ -1313,7 +1442,7 @@ function Calendar({
               <div className="day-num">{day}</div>
               {events.map((event) => (
                 <div className="event" key={event.id}>
-                  {platformLabels[event.platform]} ·{" "}
+                  {postTypeLabels[event.postType] || platformLabels[event.platform]} ·{" "}
                   {event.scheduledAt
                     ? new Intl.DateTimeFormat("vi-VN", {
                         timeZone: "Asia/Ho_Chi_Minh",

@@ -7,6 +7,8 @@ type UpdateBody = {
   content?: string;
   status?: "draft" | "approved" | "scheduled";
   scheduledAt?: string | null;
+  title?: string;
+  description?: string;
 };
 
 export async function PATCH(
@@ -16,7 +18,14 @@ export async function PATCH(
   const { id } = await context.params;
   const body = (await request.json().catch(() => null)) as UpdateBody | null;
 
-  if (!body || (!body.content && !body.status && body.scheduledAt === undefined))
+  if (
+    !body ||
+    (!body.content &&
+      !body.status &&
+      body.scheduledAt === undefined &&
+      body.title === undefined &&
+      body.description === undefined)
+  )
     return NextResponse.json(
       { success: false, error: "Không có dữ liệu cần cập nhật." },
       { status: 400 },
@@ -26,6 +35,8 @@ export async function PATCH(
     content?: string;
     status?: UpdateBody["status"];
     scheduledAt?: Date | null;
+    title?: string;
+    description?: string;
   } = {};
   if (body.content !== undefined) {
     if (!body.content.trim())
@@ -36,6 +47,8 @@ export async function PATCH(
     data.content = body.content;
   }
   if (body.status) data.status = body.status;
+  if (body.title !== undefined) data.title = body.title.trim();
+  if (body.description !== undefined) data.description = body.description.trim();
   if (body.scheduledAt !== undefined) {
     data.scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null;
     if (data.scheduledAt && Number.isNaN(data.scheduledAt.getTime()))
@@ -83,13 +96,17 @@ export async function PATCH(
             postId: post.id,
             scheduledAt: post.scheduledAt.toISOString(),
             platform: post.platform,
+            postType: post.postType,
             content: post.content,
+            title: post.title,
+            description: post.description,
             employee: scheduledPost.item.employeeName,
             note: scheduledPost.item.originalNote,
             media: scheduledPost.item.media.map((media) => ({
               fileId: media.id,
               fileName: media.fileName,
               url: media.fileUrl,
+              mimeType: media.mimeType,
             })),
             mediaUrls: scheduledPost.item.media.map((media) => media.fileUrl),
           }),

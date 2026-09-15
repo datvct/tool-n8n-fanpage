@@ -12,13 +12,13 @@
         },
         "options": {}
       },
-      "id": "825d2983-8c16-4487-bf91-14c50d2cb4fc",
-      "name": "Cấp quyền public ảnh Drive",
+      "id": "abacf1de-6597-4689-86c1-bd1182af6c9e",
+      "name": "Cấp quyền public media Drive",
       "type": "n8n-nodes-base.googleDrive",
       "typeVersion": 3,
       "position": [
-        -3312,
-        4320
+        -3440,
+        4992
       ],
       "credentials": {
         "googleDriveOAuth2Api": {
@@ -40,25 +40,24 @@
         },
         "documentId": {
           "__rl": true,
-          "value": "1tS9536tkbOmfFdQJWZ4rzLVEVpr-68GWFx05lIxrpts",
-          "mode": "list",
-          "cachedResultName": "Logs Submit Form Automation"
+          "value": "1s5j8i73Dr3BX69dyoII0p5yf9k6Va7i_on7o8_cN8JM",
+          "mode": "id"
         },
         "sheetName": {
           "__rl": true,
-          "value": "148026619",
+          "value": "748577904",
           "mode": "id"
         },
         "event": "rowAdded",
         "options": {}
       },
-      "id": "4d01435c-3a15-498e-89d6-17184c412791",
+      "id": "a2e0c0be-ca8f-44b7-bd5e-0db50df1c9c1",
       "name": "Google Sheets Trigger - Row Added",
       "type": "n8n-nodes-base.googleSheetsTrigger",
       "typeVersion": 1,
       "position": [
-        -4512,
-        4304
+        -4640,
+        4976
       ],
       "credentials": {
         "googleSheetsTriggerOAuth2Api": {
@@ -71,13 +70,13 @@
       "parameters": {
         "jsCode": "const row = $json._row || {};\nconst images = row.images || [];\nif (!images.length) return [];\nreturn images.map((image, index) => ({ json: { ...$json, file_id: image.fileId || '', file_name: image.fileName || `google-drive-image-${index + 1}`, original_url: image.originalUrl || image.previewUrl || '', image_index: index, image_count: images.length } }));"
       },
-      "id": "d6dd4644-c3e6-41f0-a781-4b0e2b0b5916",
+      "id": "81fc6627-020e-4283-a93e-39aa119a6604",
       "name": "Tách từng URL ảnh",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3664,
-        4304
+        -3792,
+        4976
       ]
     },
     {
@@ -91,7 +90,7 @@
           },
           "conditions": [
             {
-              "leftValue": "={{ ($json._row.images || []).length }}",
+              "leftValue": "={{ ($json._row.images || []).length + ($json._row.video ? 1 : 0) }}",
               "rightValue": 0,
               "operator": {
                 "type": "number",
@@ -103,26 +102,26 @@
         },
         "options": {}
       },
-      "id": "f5350df6-72ba-4dbb-8c14-2b4dc317caa6",
-      "name": "Có ảnh để tải?",
+      "id": "d13a1a02-1287-4250-96ca-d685297509b4",
+      "name": "Có media Drive để tải?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3808,
-        4480
+        -3936,
+        5152
       ]
     },
     {
       "parameters": {
         "jsCode": "return [{ json: { _row: $json._row || {}, images: [] } }];"
       },
-      "id": "06c45320-cecf-4b11-afe9-cf4d23e9148a",
+      "id": "9b60271d-05dd-4b16-ac79-1dcc7f4a194c",
       "name": "Không có ảnh",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3584,
-        4704
+        -3712,
+        5376
       ]
     },
     {
@@ -130,13 +129,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "let imageUrl = String($json.original_url || '').trim();\nconst driveId = imageUrl.match(/(?:open\\?id=|uc\\?(?:export=[^&]+&)?id=|thumbnail\\?id=|file\\/d\\/|[?&]id=)([A-Za-z0-9_-]+)/)?.[1] || String($json.file_id || '').trim();\nif (driveId) imageUrl = `https://drive.google.com/uc?export=download&id=${driveId}`;\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) imageUrl = imageUrl.replace('dl=0', 'dl=1');\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) imageUrl = imageUrl.split('?')[0] + '?download=1';\nreturn { json: { ...$json, file_id: driveId, direct_download_url: imageUrl, preview_url: driveId ? `https://drive.google.com/uc?export=view&id=${driveId}` : imageUrl } };"
       },
-      "id": "04813a66-83a0-492a-be73-1c4ebd37344a",
+      "id": "daa7ad53-6551-40cf-9578-e4de7cb15402",
       "name": "Đổi link chia sẻ thành link tải",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3504,
-        4336
+        -3632,
+        5008
       ]
     },
     {
@@ -150,13 +149,13 @@
           }
         }
       },
-      "id": "8336d352-f98f-4461-989c-dbf6dc27e778",
-      "name": "Download Image - Kiểm tra binary",
+      "id": "e273ba0d-3159-41b7-afed-b9d228f47ffd",
+      "name": "Download media Drive - Kiểm tra binary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3104,
-        4304
+        -3232,
+        4976
       ]
     },
     {
@@ -171,23 +170,23 @@
           "values": [
             {
               "role": "system",
-              "content": "=Bạn là chuyên gia Content Marketing và Social Media cho doanh nghiệp công nghệ EPCB và Vivoo.\n\nNhiệm vụ của bạn là biến các ghi chú công việc, hình ảnh và thông tin thực tế thành bài đăng mạng xã hội có tính kể chuyện, chân thực và tạo được sự tin tưởng về năng lực của doanh nghiệp.\n\nLuôn viết bằng tiếng Việt tự nhiên như người thật, ưu tiên chia sẻ những hoạt động thực tế của công ty như:\n\n* Lắp ráp thiết bị.\n* Kiểm thử sản phẩm.\n* Lắp đặt tại công trình.\n* Bàn giao cho khách hàng.\n* Bảo trì, bảo dưỡng.\n* Demo giải pháp.\n* Hậu trường kỹ thuật.\n* Cuộc sống đội ngũ kỹ thuật.\n\nMục tiêu của bài viết:\n\n* Giúp người đọc hiểu công ty đang làm gì mỗi ngày.\n* Thể hiện sự chỉn chu trong quy trình làm việc.\n* Tăng sự tin cậy về năng lực kỹ thuật.\n* Khuyến khích người đọc tương tác tự nhiên.\n\n## Quy tắc sử dụng thông tin\n\nChỉ sử dụng những thông tin có trong ghi chú.\n\nKhông được tự bịa:\n\n* tên khách hàng\n* địa điểm\n* thời gian\n* model thiết bị\n* thông số kỹ thuật\n* số liệu\n\nNếu ghi chú có các thông tin như địa điểm, thời gian, loại thiết bị, tên dự án hoặc tên khách hàng (được phép nêu), hãy đưa chúng vào nội dung một cách tự nhiên.\n\nNếu ghi chú không có những thông tin đó thì bỏ qua.\n\n## Phong cách viết\n\n### Facebook\n\n* Khoảng 80–180 từ.\n* Giọng gần gũi, tự nhiên.\n* Có mở bài tạo sự chú ý.\n* Có 1–3 emoji phù hợp.\n* CTA nhẹ nhàng.\n* Không dùng quá nhiều hashtag.\n\n### LinkedIn\n\n* Khoảng 180–350 từ.\n* Chuyên nghiệp nhưng vẫn có tính kể chuyện.\n* Mở đầu bằng một câu thu hút.\n* Chia thành nhiều đoạn ngắn.\n* Nêu rõ bối cảnh, quá trình thực hiện và kết quả nếu có.\n* Làm nổi bật tinh thần làm việc của đội ngũ.\n* Kết thúc bằng câu hỏi hoặc lời mời trao đổi.\n\n## Cấu trúc gợi ý cho bài LinkedIn\n\n1. Hook mở đầu.\n2. Bối cảnh công việc.\n3. Quá trình thực hiện.\n4. Điều đáng chú ý hoặc bài học.\n5. Lời kết và CTA.\n6. Đính kèm website.\n\n## Hashtag\n\n* Facebook: tối đa 3 hashtag.\n* LinkedIn: 3–5 hashtag liên quan.\n* Chỉ dùng hashtag phù hợp với nội dung thực tế.\n\n## Website (luôn thêm 2 câu này vào cuối bài. bắt buộc phải thêm nha)\n\nTìm hiểu thêm về EPCB: https://epcb.vn/\n\nTìm hiểu thêm về Vivoo: https://vivooeye.com/\n\n## Định dạng đầu ra\n\nChỉ trả về JSON hợp lệ.\n\n```json\n{\n  \"facebook\": \"...\",\n  \"linkedin\": \"...\"\n}\n```\n\nNếu chỉ yêu cầu một nền tảng thì nền tảng còn lại phải là chuỗi rỗng.\n\nVí dụ:\n\n```json\n{\n  \"facebook\": \"\",\n  \"linkedin\": \"...\"\n}\n```\n\nKhông thêm markdown, không thêm giải thích ngoài JSON.\n"
+              "content": "=Bạn là chuyên gia sáng tạo nội dung cho EPCB. Hãy tạo nội dung dựa trên dữ liệu Google Form, không bịa thông tin kỹ thuật hoặc số liệu. Nếu postType là post: Facebook viết gần gũi 80-180 từ, LinkedIn viết chuyên nghiệp 180-350 từ. Nếu postType là facebook_reel: viết caption Facebook ngắn, tự nhiên, có lời kêu gọi xem video. Nếu postType là youtube_short hoặc youtube_video: tạo youtube content, youtubeTitle và youtubeDescription; title tối đa 100 ký tự, description rõ ràng, có hashtag phù hợp. Nếu ghi chú trống, dùng tiêu đề và mô tả video làm dữ liệu chính. Tuyệt đối không để trống field của nền tảng đang yêu cầu; nếu dữ liệu ít, tạo nội dung giới thiệu EPCB an toàn, không bịa chi tiết. Chỉ trả về JSON hợp lệ duy nhất, không markdown, không giải thích, đúng schema: {\"facebook\":\"\",\"linkedin\":\"\",\"youtube\":\"\",\"youtubeTitle\":\"\",\"youtubeDescription\":\"\"}."
             },
             {
-              "content": "={{ 'Tạo nội dung từ ghi chú công việc sau. Người gửi: ' + ($json._row.employeeName || '') + '. Ghi chú: ' + ($json._row.note || '(không có)') + '. Nền tảng yêu cầu: ' + ($json._row.platform || 'both') }}"
+              "content": "={{ 'Hãy tạo nội dung ngay từ dữ liệu sau. Người gửi: ' + ($json._row.employeeName || 'Nhân viên EPCB') + '. Ghi chú công việc: ' + ($json._row.note || '(không có)') + '. Loại nội dung: ' + ($json._row.postType || 'post') + '. Nền tảng cần đăng: ' + ($json._row.platform || 'facebook') + '. Tiêu đề video đã nhập: ' + ($json._row.youtubeTitle || '(không có)') + '. Mô tả video đã nhập: ' + ($json._row.youtubeDescription || '(không có)') + '. Hãy trả JSON có nội dung không rỗng cho nền tảng cần đăng.' }}"
             }
           ]
         },
         "builtInTools": {},
         "options": {}
       },
-      "id": "fe5a7bb7-1c32-4862-8ade-44cbafb80990",
+      "id": "09f31656-5fe5-4190-9ce2-a29f77bf6ad3",
       "name": "AI tạo Facebook và LinkedIn",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
       "position": [
-        -3824,
-        4096
+        -3952,
+        4768
       ],
       "credentials": {
         "openAiApi": {
@@ -198,41 +197,41 @@
     },
     {
       "parameters": {
-        "jsCode": "const row = $('Chuẩn hóa row và nền tảng').first().json._row || {};\nconst aiItem = $input.first()?.json || {};\n\n// Lấy text từ cấu trúc output của OpenAI\nlet raw = '';\n\nif (Array.isArray(aiItem.output)) {\n  raw = aiItem.output\n    .flatMap(msg => msg.content || [])\n    .filter(content => content.type === 'output_text')\n    .map(content => content.text || '')\n    .join('\\n');\n}\n\n// fallback nếu sau này format output thay đổi\nif (!raw) {\n  raw = String(\n    aiItem.output_text ||\n    aiItem.response ||\n    aiItem.text ||\n    ''\n  );\n}\n\n// Xóa ```json ... ``` nếu có\nraw = raw\n  .replace(/^```json\\s*/i, '')\n  .replace(/^```\\s*/i, '')\n  .replace(/\\s*```$/i, '')\n  .trim();\n\nlet parsed = {};\n\ntry {\n  parsed = JSON.parse(raw);\n} catch (error) {\n  // fallback: tìm JSON object trong text\n  try {\n    const match = raw.match(/\\{[\\s\\S]*\\}/);\n    parsed = match ? JSON.parse(match[0]) : {};\n  } catch {\n    parsed = {};\n  }\n}\n\nreturn [\n  {\n    json: {\n      _row: row,\n      fb_content: String(parsed.facebook || '').trim(),\n      li_content: String(parsed.linkedin || '').trim(),\n    }\n  }\n];"
+        "jsCode": "const row = $('Chuẩn hóa row và nền tảng').first().json._row || {};\nconst aiItem = $input.first()?.json || {};\nlet raw = '';\nif (Array.isArray(aiItem.output)) {\n  raw = aiItem.output.flatMap((message) => message.content || [])\n    .filter((content) => content.type === 'output_text')\n    .map((content) => content.text || '').join('\\n');\n}\nif (!raw) raw = String(aiItem.output_text || aiItem.response || aiItem.text || '');\nraw = raw.replace(/^\\`\\`\\`json\\s*/i, '').replace(/^\\`\\`\\`\\s*/i, '').replace(/\\s*\\`\\`\\`$/i, '').trim();\nlet parsed = {};\ntry { parsed = JSON.parse(raw); } catch {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  if (match) { try { parsed = JSON.parse(match[0]); } catch {} }\n}\nreturn [{ json: {\n  _row: row,\n  fb_content: String(parsed.facebook || '').trim(),\n  li_content: String(parsed.linkedin || '').trim(),\n  yt_content: String(parsed.youtube || '').trim(),\n  youtubeTitle: String(parsed.youtubeTitle || '').trim(),\n  youtubeDescription: String(parsed.youtubeDescription || '').trim()\n} }];"
       },
-      "id": "0d16daae-273a-4f0e-9c23-e3ddb3285c32",
+      "id": "617ad64f-4468-4fc5-b16d-84f5d434af1d",
       "name": "Parse JSON AI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3392,
-        4096
+        -3520,
+        4768
       ]
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first()?.json || {};\nconst row = data._row || {};\nreturn [{ json: { sourceRowId: row.sourceRowId, employeeName: row.employeeName, originalNote: row.note, images: data.images || [], facebookContent: data.fb_content || '', linkedinContent: data.li_content || '', sheetRow: row.sheetRow } }];"
+        "jsCode": "const data = $input.first()?.json || {};\nconst row = data._row || {};\nreturn [{ json: {\n  sourceRowId: row.sourceRowId,\n  employeeName: row.employeeName,\n  originalNote: row.note,\n  postType: row.postType || 'post',\n  images: data.images || [],\n  videoUrl: row.video?.url || '',\n  videoFileId: row.video?.fileId || '',\n  videoFileName: row.video?.fileName || '',\n  youtubeTitle: data.youtubeTitle || row.youtubeTitle || '',\n  youtubeDescription: data.youtubeDescription || row.youtubeDescription || '',\n  facebookContent: data.fb_content || '',\n  linkedinContent: data.li_content || '',\n  youtubeContent: data.yt_content || '',\n  sheetRow: row.sheetRow\n} }];"
       },
-      "id": "eb228bfd-9f1d-455b-8a12-aa3d9787eef0",
+      "id": "cd126145-6eba-492e-9c0f-694163d7859c",
       "name": "Tạo payload PostgreSQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2192,
-        4352
+        -2320,
+        5024
       ]
     },
     {
       "parameters": {
         "jsCode": "const sourceItems = $('Đổi link chia sẻ thành link tải').all();\n\nconst first = sourceItems[0]?.json || {};\nconst row = first._row || {};\n\nconst images = sourceItems\n  .map((item, index) => {\n    const source = item.json || {};\n\n    const fileId =\n      source.file_id ||\n      row.images?.[index]?.fileId ||\n      '';\n\n    const fileName =\n      source.file_name ||\n      row.images?.[index]?.fileName ||\n      `google-drive-image-${index + 1}`;\n\n    // Tự tạo link preview Google Drive\n    const url = fileId\n      ? `https://drive.google.com/file/d/${fileId}/preview`\n      : '';\n\n    return {\n      fileId,\n      fileName,\n      url\n    };\n  })\n  .filter(image => image.fileId);\n\nreturn [\n  {\n    json: {\n      _row: row,\n      images\n    }\n  }\n];"
       },
-      "id": "ee6cbe80-7e3a-42a7-ade6-dac81fd4e43a",
+      "id": "2b534f4e-7540-47c3-9b10-9ff02e3129c1",
       "name": "Tập hợp ảnh đã tải",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2912,
-        4352
+        -3040,
+        5024
       ]
     },
     {
@@ -241,19 +240,19 @@
         "combineBy": "combineByPosition",
         "options": {}
       },
-      "id": "59569092-b23c-4769-908a-69728e7286fc",
+      "id": "413dc951-110a-4c8e-a1a6-a61576ec566a",
       "name": "Gộp AI và ảnh",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -2416,
-        4352
+        -2544,
+        5024
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/contents/import",
+        "url": "https://2f88-14-224-216-170.ngrok-free.app/api/contents/import",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -269,16 +268,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ sourceRowId: $json.sourceRowId, employeeName: $json.employeeName, originalNote: $json.originalNote, images: $json.images, facebookContent: $json.facebookContent, linkedinContent: $json.linkedinContent }) }}",
+        "jsonBody": "={{ JSON.stringify({ sourceRowId: $json.sourceRowId, employeeName: $json.employeeName, originalNote: $json.originalNote, postType: $json.postType, images: $json.images, videoUrl: $json.videoUrl, videoFileId: $json.videoFileId, videoFileName: $json.videoFileName, youtubeTitle: $json.youtubeTitle, youtubeDescription: $json.youtubeDescription, facebookContent: $json.facebookContent, linkedinContent: $json.linkedinContent, youtubeContent: $json.youtubeContent }) }}",
         "options": {}
       },
-      "id": "adcff46a-d28e-408b-8f0d-15d6c76b2b44",
+      "id": "61ad4dc4-a2b9-4d0c-ab62-18712543f687",
       "name": "Lưu vào Content Manager PostgreSQL",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -1968,
-        4352
+        -2096,
+        5024
       ]
     },
     {
@@ -286,24 +285,19 @@
         "operation": "update",
         "documentId": {
           "__rl": true,
-          "value": "1tS9536tkbOmfFdQJWZ4rzLVEVpr-68GWFx05lIxrpts",
-          "mode": "list",
-          "cachedResultName": "Logs Submit Form Automation",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tS9536tkbOmfFdQJWZ4rzLVEVpr-68GWFx05lIxrpts/edit?usp=drivesdk"
+          "value": "1s5j8i73Dr3BX69dyoII0p5yf9k6Va7i_on7o8_cN8JM",
+          "mode": "id"
         },
         "sheetName": {
           "__rl": true,
-          "value": 148026619,
-          "mode": "list",
-          "cachedResultName": "Dữ liệu được submit",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1tS9536tkbOmfFdQJWZ4rzLVEVpr-68GWFx05lIxrpts/edit#gid=148026619"
+          "value": "748577904",
+          "mode": "id"
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "Status": "Imported",
-            "Dấu thời gian": "={{ $('Google Sheets Trigger - Row Added').item.json['Dấu thời gian'] }}",
-            "row_number": 0
+            "Dấu thời gian": "={{ $('Filter').item.json[\"Dấu thời gian\"] }}",
+            "Status": "Imported"
           },
           "matchingColumns": [
             "Dấu thời gian"
@@ -318,6 +312,26 @@
               "type": "string",
               "canBeUsedToMatch": true,
               "removed": false
+            },
+            {
+              "id": "Tên nhân viên",
+              "displayName": "Tên nhân viên",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Loại nội dung",
+              "displayName": "Loại nội dung",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
             },
             {
               "id": "Hình ảnh công việc",
@@ -340,8 +354,8 @@
               "removed": true
             },
             {
-              "id": "Nền tảng đăng",
-              "displayName": "Nền tảng đăng",
+              "id": "Nền tảng",
+              "displayName": "Nền tảng",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -350,8 +364,78 @@
               "removed": true
             },
             {
-              "id": "Tên nhân viên",
-              "displayName": "Tên nhân viên",
+              "id": "Video Reel ",
+              "displayName": "Video Reel ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Mô tả Reel",
+              "displayName": "Mô tả Reel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Video Short ",
+              "displayName": "Video Short ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tiêu đề Youtube Short",
+              "displayName": "Tiêu đề Youtube Short",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Mô tả Youtube Short",
+              "displayName": "Mô tả Youtube Short",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Video thường",
+              "displayName": "Video thường",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Tiêu đề youtube video thường ",
+              "displayName": "Tiêu đề youtube video thường ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Mô tả youtube video thường ",
+              "displayName": "Mô tả youtube video thường ",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -377,7 +461,7 @@
               "type": "number",
               "canBeUsedToMatch": true,
               "readOnly": true,
-              "removed": false
+              "removed": true
             }
           ],
           "attemptToConvertTypes": false,
@@ -385,13 +469,13 @@
         },
         "options": {}
       },
-      "id": "9f04fc5c-eb04-4781-9c87-904f7b2bf4e5",
+      "id": "42341911-f7d7-493d-aac7-4b16d73dc335",
       "name": "Đánh dấu Sheet Imported",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [
-        -1536,
-        4352
+        -1664,
+        5024
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -402,15 +486,15 @@
     },
     {
       "parameters": {
-        "jsCode": "const output = [];\n\nfor (const item of $input.all()) {\n  const row = item.json || {};\n\n  const rawImages = String(\n    row['Hình ảnh công việc'] ||\n    row.linkHinhAnh ||\n    row.images ||\n    ''\n  ).trim();\n\n  const note = String(\n    row['Ghi chú công việc'] ||\n    row['Ghi chú'] ||\n    row.note ||\n    ''\n  ).trim();\n\n  const platformRaw = String(\n    row['Nền tảng đăng'] ||\n    row.platform ||\n    ''\n  ).toLowerCase();\n\n  const hasFacebook = /facebook|fanpage/.test(platformRaw);\n  const hasLinkedIn = /linkedin/.test(platformRaw);\n\n  const imagePattern =\n    /https?:\\/\\/drive\\.google\\.com\\/(?:open\\?id=|file\\/d\\/)([A-Za-z0-9_-]+)/g;\n\n  const ids = [...rawImages.matchAll(imagePattern)]\n    .map((match) => match[1]);\n\n  const images = [...new Set(ids)].map((fileId, index) => ({\n    fileId,\n    fileName: `google-drive-image-${index + 1}`,\n    originalUrl: `https://drive.google.com/open?id=${fileId}`,\n    previewUrl: `https://drive.google.com/file/d/${fileId}/preview`,\n  }));\n\n  const sourceRowId = String(\n    row['Dấu thời gian'] ||\n    row.Timestamp ||\n    row.timestamp ||\n    row.row_number ||\n    `${note}-${rawImages}`\n  ).trim();\n\n  const employeeName = String(\n    row['Tên nhân viên'] ||\n    row['Tên'] ||\n    row.Username ||\n    row['Email address'] ||\n    'Chưa xác định'\n  ).trim();\n\n  // QUAN TRỌNG: copy dữ liệu, không truyền row trực tiếp\n  const sheetRow = { ...row };\n\n  item.json._row = {\n    sourceRowId,\n    employeeName,\n    note,\n\n    platform:\n      hasFacebook && hasLinkedIn\n        ? 'both'\n        : hasFacebook\n          ? 'facebook'\n          : hasLinkedIn\n            ? 'linkedin'\n            : 'both',\n\n    targetFB:\n      hasFacebook || (!hasFacebook && !hasLinkedIn),\n\n    targetLI:\n      hasLinkedIn || (!hasFacebook && !hasLinkedIn),\n\n    sheetRow,\n    imageLink: rawImages,\n    images,\n  };\n\n  output.push(item);\n}\n\nreturn output;"
+        "jsCode": "const output = [];\nconst norm = (value) => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');\nconst get = (row, ...names) => {\n  for (const name of names) {\n    const wanted = norm(name);\n    const found = Object.entries(row).find(([field, value]) => norm(field) === wanted && String(value || '').trim());\n    if (found) return found[1];\n  }\n  return '';\n};\nconst driveIds = (value) => {\n  const text = String(value || '').replace(/&amp;/g, '&').replace(/\\\\&/g, '&');\n  const ids = [];\n  for (const match of text.matchAll(new RegExp('/d/([A-Za-z0-9_-]+)', 'g'))) ids.push(match[1]);\n  for (const match of text.matchAll(new RegExp('[?&]id=([A-Za-z0-9_-]+)', 'g'))) ids.push(match[1]);\n  return [...new Set(ids)];\n};\nconst types = { 'bài viết thường': 'post', 'bài viết': 'post', 'facebook reel': 'facebook_reel', 'youtube short': 'youtube_short', 'youtube video thường': 'youtube_video', 'youtube video': 'youtube_video' };\nfor (const item of $input.all()) {\n  const source = item.json || {};\n  const postType = types[norm(get(source, 'Loại nội dung', 'postType') || 'Bài viết thường')] || 'post';\n  const imageIds = driveIds(get(source, 'Hình ảnh công việc', 'linkHinhAnh', 'images'));\n  const videoValue = postType === 'facebook_reel' ? get(source, 'Video Reel', 'Video Reel ', 'videoReel') : postType === 'youtube_short' ? get(source, 'Video Short', 'Video Short ', 'videoShort') : postType === 'youtube_video' ? get(source, 'Video thường', 'Video thường ', 'Video', 'videoUrl') : get(source, 'Video đính kèm', 'videoUrl');\n  const videoId = driveIds(videoValue)[0] || '';\n  const title = postType === 'youtube_short' ? get(source, 'Tiêu đề Youtube Short', 'Tiêu đề YouTube Short', 'youtubeTitle') : postType === 'youtube_video' ? get(source, 'Tiêu đề youtube video thường', 'Tiêu đề YouTube video thường', 'youtubeTitle') : '';\n  const description = postType === 'youtube_short' ? get(source, 'Mô tả Youtube Short', 'Mô tả YouTube Short', 'youtubeDescription') : postType === 'youtube_video' ? get(source, 'Mô tả youtube video thường', 'Mô tả YouTube video thường', 'youtubeDescription') : postType === 'facebook_reel' ? get(source, 'Mô tả Reel', 'description') : '';\n  const platformRaw = norm(get(source, 'Nền tảng', 'Nền tảng đăng', 'platform'));\n  const hasFacebook = /facebook|fanpage/.test(platformRaw) || postType === 'facebook_reel';\n  const hasLinkedIn = /linkedin/.test(platformRaw) && postType === 'post';\n  const hasYouTube = /youtube/.test(platformRaw) || postType === 'youtube_short' || postType === 'youtube_video';\n  const platform = hasFacebook && hasLinkedIn ? 'both' : hasFacebook ? 'facebook' : hasLinkedIn ? 'linkedin' : hasYouTube ? 'youtube' : 'facebook';\n  const images = imageIds.map((fileId, index) => ({ fileId, fileName: 'google-drive-image-' + (index + 1), originalUrl: 'https://drive.google.com/open?id=' + fileId, previewUrl: 'https://drive.google.com/file/d/' + fileId + '/preview', mimeType: 'image/*' }));\n  const row = { sourceRowId: String(get(source, 'Dấu thời gian', 'Timestamp', 'timestamp', 'row_number') || Date.now()), employeeName: String(get(source, 'Tên nhân viên', 'Tên', 'Email address') || 'Chưa xác định'), note: String(get(source, 'Ghi chú công việc', 'Ghi chú', 'note') || '').trim(), postType, platform, targetFB: hasFacebook, targetLI: hasLinkedIn, targetYouTube: hasYouTube, youtubeTitle: String(title || '').trim(), youtubeDescription: String(description || '').trim(), video: videoId ? { fileId: videoId, fileName: 'google-drive-video', url: 'https://drive.google.com/uc?export=download&id=' + videoId, mimeType: 'video/mp4' } : null, images, sheetRow: { ...source } };\n  output.push({ json: { ...item.json, _row: row } });\n}\nreturn output;"
       },
-      "id": "3903900a-7035-43dc-9f73-d516062c59b2",
+      "id": "998d4352-4b3a-4fdd-8597-a75a8f9dd95c",
       "name": "Chuẩn hóa row và nền tảng",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4064,
-        4304
+        -4192,
+        4976
       ]
     },
     {
@@ -442,19 +526,89 @@
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2.3,
       "position": [
-        -4288,
-        4304
+        -4416,
+        4976
       ],
-      "id": "16e47be8-e5d6-45d7-96d0-4a022aa43a82",
+      "id": "059e5d06-eda9-4322-9f2d-515850c89a69",
       "name": "Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nconst key = (value) => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');\nconst get = (row, ...names) => { const entries = Object.entries(row); for (const name of names) { const found = entries.find(([field]) => key(field) === key(name)); if (found && String(found[1] || '').trim()) return found[1]; } return ''; };\nconst idFromDrive = (value) => { const raw = String(value || '').replace(/\\\\&/g, '&').replace(/&amp;/g, '&'); return raw.match(/(?:\\/d\\/|[?&]id=)([A-Za-z0-9_-]+)/)?.[1] || ''; };\nconst typeMap = { 'bài viết thường': 'post', 'bài viết': 'post', 'facebook reel': 'facebook_reel', 'youtube short': 'youtube_short', 'youtube video thường': 'youtube_video', 'youtube video': 'youtube_video' };\nfor (const item of $input.all()) { const source = item.json || {}; const type = key(get(source, 'Loại nội dung', 'postType') || 'Bài viết thường'); const postType = typeMap[type] || 'post'; const imageRaw = get(source, 'Hình ảnh công việc', 'linkHinhAnh', 'images'); const videoRaw = postType === 'facebook_reel' ? get(source, 'Video Reel', 'videoReel') : postType === 'youtube_short' ? get(source, 'Video Short', 'videoShort') : postType === 'youtube_video' ? get(source, 'Video thường', 'video', 'videoUrl') : get(source, 'Video đính kèm', 'videoUrl'); const imageIds = [...new Set(String(imageRaw || '').split(/[,\\n]+/).map(idFromDrive).filter(Boolean))]; const videoId = idFromDrive(videoRaw); const title = postType === 'youtube_short' ? get(source, 'Tiêu đề Youtube Short', 'youtubeTitle') : postType === 'youtube_video' ? get(source, 'Tiêu đề youtube video thường', 'youtubeTitle') : ''; const description = postType === 'youtube_short' ? get(source, 'Mô tả Youtube Short', 'youtubeDescription') : postType === 'youtube_video' ? get(source, 'Mô tả youtube video thường', 'youtubeDescription') : postType === 'facebook_reel' ? get(source, 'Mô tả Reel', 'description') : ''; const platform = postType === 'facebook_reel' ? 'facebook' : postType === 'youtube_short' || postType === 'youtube_video' ? 'youtube' : key(get(source, 'Nền tảng', 'Nền tảng đăng', 'platform')); const note = String(get(source, 'Ghi chú công việc', 'Ghi chú', 'note') || '').trim(); const row = { sourceRowId: String(get(source, 'Dấu thời gian', 'Timestamp', 'timestamp', 'row_number') || Date.now()), employeeName: String(get(source, 'Tên nhân viên', 'Tên', 'Email address') || 'Chưa xác định'), note, postType, platform: platform || 'facebook', youtubeTitle: String(title || '').trim(), youtubeDescription: String(description || '').trim(), video: videoId ? { fileId: videoId, fileName: 'google-drive-video', url: 'https://drive.google.com/uc?export=download&id=' + videoId, mimeType: 'video/mp4' } : null, images: imageIds.map((fileId, index) => ({ fileId, fileName: 'google-drive-image-' + (index + 1), originalUrl: 'https://drive.google.com/open?id=' + fileId, previewUrl: 'https://drive.google.com/file/d/' + fileId + '/preview', mimeType: 'image/*' })), sheetRow: source }; item.json._row = row; output.push(item); }\nreturn output;"
+      },
+      "id": "f0d7e93e-6d33-4c1d-9a4e-7f3d5b8c2a11",
+      "name": "Chuẩn hóa row media Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4000, 4800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $json._row || {}; const media = [...(row.images || []).map((file, index) => ({ ...file, mediaType: 'image', mediaIndex: index })), ...(row.video ? [{ ...row.video, mediaType: 'video', mediaIndex: (row.images || []).length }] : [])]; if (!media.length) return []; return media.map((file, index) => ({ json: { ...$json, file_id: file.fileId, file_name: file.fileName || 'google-drive-media-' + (index + 1), original_url: file.originalUrl || file.url || file.previewUrl || '', media_type: file.mediaType, media_index: index, media_count: media.length } }));"
+      },
+      "id": "b6f1c8d2-7a43-4e91-8f05-2c9d6b7e3a10",
+      "name": "Tách từng media Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3760, 4800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('Đổi link chia sẻ thành link tải').all(); const first = items[0]?.json || {}; const row = first._row || {}; const images = items.filter((item) => item.json?.media_type === 'image' && item.json?.file_id).map((item, index) => ({ fileId: item.json.file_id, fileName: item.json.file_name || 'google-drive-image-' + (index + 1), url: 'https://drive.google.com/uc?export=view&id=' + item.json.file_id, previewUrl: 'https://drive.google.com/file/d/' + item.json.file_id + '/preview', mimeType: 'image/*' })); const videoFile = items.find((item) => item.json?.media_type === 'video' && item.json?.file_id); const video = videoFile ? { fileId: videoFile.json.file_id, fileName: videoFile.json.file_name || 'google-drive-video', url: 'https://drive.google.com/uc?export=download&id=' + videoFile.json.file_id, mimeType: 'video/mp4' } : row.video || null; return [{ json: { _row: { ...row, images, video }, images } }];"
+      },
+      "id": "c7e2d9f1-8b54-4a60-9e13-5f6d7c2b1a90",
+      "name": "Tập hợp media Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2960, 4800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nconst normalize = (value) => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');\nconst getValue = (row, ...names) => { const fields = Object.entries(row); for (const name of names) { const wanted = normalize(name); const found = fields.find(([field]) => normalize(field) === wanted); if (found && String(found[1] || '').trim()) return found[1]; } return ''; };\nconst extractDriveIds = (value) => { const text = String(value || '').replace(/&amp;/g, '&').replace(/\\\\&/g, '&'); const ids = []; for (const match of text.matchAll(new RegExp('/d/([A-Za-z0-9_-]+)', 'g'))) ids.push(match[1]); for (const match of text.matchAll(new RegExp('[?&]id=([A-Za-z0-9_-]+)', 'g'))) ids.push(match[1]); return [...new Set(ids)]; };\nconst typeMap = { 'bài viết thường': 'post', 'bài viết': 'post', 'facebook reel': 'facebook_reel', 'youtube short': 'youtube_short', 'youtube video thường': 'youtube_video', 'youtube video': 'youtube_video' };\nfor (const item of $input.all()) { const source = item.json || {}; const postType = typeMap[normalize(getValue(source, 'Loại nội dung', 'postType') || 'Bài viết thường')] || 'post'; const imageRaw = getValue(source, 'Hình ảnh công việc', 'linkHinhAnh', 'images'); const videoRaw = postType === 'facebook_reel' ? getValue(source, 'Video Reel', 'Video Reel ', 'videoReel') : postType === 'youtube_short' ? getValue(source, 'Video Short', 'Video Short ', 'videoShort') : postType === 'youtube_video' ? getValue(source, 'Video thường', 'Video thường ', 'Video', 'videoUrl') : getValue(source, 'Video đính kèm', 'videoUrl'); const imageIds = extractDriveIds(imageRaw); const videoId = extractDriveIds(videoRaw)[0] || ''; const title = postType === 'youtube_short' ? getValue(source, 'Tiêu đề Youtube Short', 'Tiêu đề YouTube Short', 'youtubeTitle') : postType === 'youtube_video' ? getValue(source, 'Tiêu đề youtube video thường', 'Tiêu đề YouTube video thường', 'youtubeTitle') : ''; const description = postType === 'youtube_short' ? getValue(source, 'Mô tả Youtube Short', 'Mô tả YouTube Short', 'youtubeDescription') : postType === 'youtube_video' ? getValue(source, 'Mô tả youtube video thường', 'Mô tả YouTube video thường', 'youtubeDescription') : postType === 'facebook_reel' ? getValue(source, 'Mô tả Reel', 'description') : ''; const platform = postType === 'facebook_reel' ? 'facebook' : postType === 'youtube_short' || postType === 'youtube_video' ? 'youtube' : normalize(getValue(source, 'Nền tảng', 'Nền tảng đăng', 'platform')) || 'facebook'; const images = imageIds.map((fileId, index) => ({ fileId, fileName: 'google-drive-image-' + (index + 1), originalUrl: 'https://drive.google.com/open?id=' + fileId, previewUrl: 'https://drive.google.com/file/d/' + fileId + '/preview', mimeType: 'image/*' })); const row = { sourceRowId: String(getValue(source, 'Dấu thời gian', 'Timestamp', 'timestamp', 'row_number') || Date.now()), employeeName: String(getValue(source, 'Tên nhân viên', 'Tên', 'Email address') || 'Chưa xác định'), note: String(getValue(source, 'Ghi chú công việc', 'Ghi chú', 'note') || '').trim(), postType, platform, youtubeTitle: String(title || '').trim(), youtubeDescription: String(description || '').trim(), video: videoId ? { fileId: videoId, fileName: 'google-drive-video', url: 'https://drive.google.com/uc?export=download&id=' + videoId, mimeType: 'video/mp4' } : null, images, sheetRow: source }; item.json._row = row; output.push(item); }\nreturn output;"
+      },
+      "id": "d8e4f7a1-5b32-4c69-9f08-2a7d6e3b1c55",
+      "name": "Chuẩn hóa row media Drive Safe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3760, 4800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $('Chuẩn hóa row media Drive Safe').first().json._row || {};\nconst ai = $input.first()?.json || {};\nconst texts = [];\nconst walk = (value, depth = 0) => { if (depth > 8 || value === null || value === undefined) return; if (typeof value === 'string') { if (value.trim()) texts.push(value.trim()); return; } if (Array.isArray(value)) { value.forEach((item) => walk(item, depth + 1)); return; } if (typeof value === 'object') Object.values(value).forEach((item) => walk(item, depth + 1)); };\nwalk(ai);\nconst raw = texts.find((text) => text.includes('{')) || texts.sort((a, b) => b.length - a.length)[0] || '';\nlet parsed = {};\ntry { parsed = JSON.parse(raw); } catch { const match = raw.match(new RegExp('\\\\{[\\\\s\\\\S]*\\\\}')); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }\nconst youtubeTitle = String(parsed.youtubeTitle || row.youtubeTitle || '').trim();\nconst youtubeDescription = String(parsed.youtubeDescription || row.youtubeDescription || '').trim();\nreturn [{ json: { _row: row, fb_content: String(parsed.facebook || '').trim(), li_content: String(parsed.linkedin || '').trim(), yt_content: String(parsed.youtube || youtubeDescription || youtubeTitle || 'Video EPCB').trim(), youtubeTitle, youtubeDescription } }];"
+      },
+      "id": "e1f4a8c2-7d35-4b69-9a02-6f3e8d1c5b77",
+      "name": "Parse JSON AI Safe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3520, 4600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = [];\nconst norm = (value) => String(value || '').trim().toLowerCase().replace(/\\s+/g, ' ');\nconst get = (row, ...names) => { for (const name of names) { const found = Object.entries(row).find(([field]) => norm(field) === norm(name) && String(field !== undefined ? row[field] : '').trim()); if (found) return found[1]; } return ''; };\nconst driveIds = (value) => { const text = String(value || '').replace(/&amp;/g, '&').replace(/\\\\&/g, '&'); const result = []; for (const match of text.matchAll(new RegExp('/d/([A-Za-z0-9_-]+)', 'g'))) result.push(match[1]); for (const match of text.matchAll(new RegExp('[?&]id=([A-Za-z0-9_-]+)', 'g'))) result.push(match[1]); return [...new Set(result)]; };\nconst types = { 'bài viết thường': 'post', 'bài viết': 'post', 'facebook reel': 'facebook_reel', 'youtube short': 'youtube_short', 'youtube video thường': 'youtube_video', 'youtube video': 'youtube_video' };\nfor (const item of $input.all()) { const source = item.json || {}; const postType = types[norm(get(source, 'Loại nội dung', 'postType') || 'Bài viết thường')] || 'post'; const imageIds = driveIds(get(source, 'Hình ảnh công việc', 'linkHinhAnh', 'images')); const videoValue = postType === 'facebook_reel' ? get(source, 'Video Reel', 'Video Reel ', 'videoReel') : postType === 'youtube_short' ? get(source, 'Video Short', 'Video Short ', 'videoShort') : postType === 'youtube_video' ? get(source, 'Video thường', 'Video thường ', 'Video', 'videoUrl') : get(source, 'Video đính kèm', 'videoUrl'); const videoId = driveIds(videoValue)[0] || ''; const title = postType === 'youtube_short' ? get(source, 'Tiêu đề Youtube Short', 'Tiêu đề YouTube Short', 'youtubeTitle') : postType === 'youtube_video' ? get(source, 'Tiêu đề youtube video thường', 'Tiêu đề YouTube video thường', 'youtubeTitle') : ''; const description = postType === 'youtube_short' ? get(source, 'Mô tả Youtube Short', 'Mô tả YouTube Short', 'youtubeDescription') : postType === 'youtube_video' ? get(source, 'Mô tả youtube video thường', 'Mô tả YouTube video thường', 'youtubeDescription') : postType === 'facebook_reel' ? get(source, 'Mô tả Reel', 'description') : ''; const platform = postType === 'facebook_reel' ? 'facebook' : postType === 'youtube_short' || postType === 'youtube_video' ? 'youtube' : norm(get(source, 'Nền tảng', 'Nền tảng đăng', 'platform')) || 'facebook'; const images = imageIds.map((fileId, index) => ({ fileId, fileName: 'google-drive-image-' + (index + 1), originalUrl: 'https://drive.google.com/open?id=' + fileId, previewUrl: 'https://drive.google.com/file/d/' + fileId + '/preview', mimeType: 'image/*' })); const row = { sourceRowId: String(get(source, 'Dấu thời gian', 'Timestamp', 'timestamp', 'row_number') || Date.now()), employeeName: String(get(source, 'Tên nhân viên', 'Tên', 'Email address') || 'Chưa xác định'), note: String(get(source, 'Ghi chú công việc', 'Ghi chú', 'note') || '').trim(), postType, platform, youtubeTitle: String(title || '').trim(), youtubeDescription: String(description || '').trim(), video: videoId ? { fileId: videoId, fileName: 'google-drive-video', url: 'https://drive.google.com/uc?export=download&id=' + videoId, mimeType: 'video/mp4' } : null, images, sheetRow: { ...source } }; output.push({ json: { ...item.json, _row: row } }); }\nreturn output;"
+      },
+      "id": "a9c5e7f1-3b62-4d80-9a14-6e2f8c7b5d33",
+      "name": "Chuẩn hóa row media Drive Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3520, 4800]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $('Chuẩn hóa row và nền tảng').first().json._row || {};\nconst ai = $input.first()?.json || {};\nconst texts = [];\nconst walk = (value, depth = 0) => { if (depth > 8 || value === null || value === undefined) return; if (typeof value === 'string') { if (value.trim()) texts.push(value.trim()); return; } if (Array.isArray(value)) { value.forEach((item) => walk(item, depth + 1)); return; } if (typeof value === 'object') Object.values(value).forEach((item) => walk(item, depth + 1)); };\nwalk(ai);\nconst raw = texts.find((text) => text.includes('{')) || texts.sort((a, b) => b.length - a.length)[0] || '';\nlet parsed = {};\ntry { parsed = JSON.parse(raw); } catch { const match = raw.match(new RegExp('\\\\{[\\\\s\\\\S]*\\\\}')); if (match) { try { parsed = JSON.parse(match[0]); } catch {} } }\nconst youtubeTitle = String(parsed.youtubeTitle || row.youtubeTitle || '').trim();\nconst youtubeDescription = String(parsed.youtubeDescription || row.youtubeDescription || '').trim();\nreturn [{ json: { _row: row, fb_content: String(parsed.facebook || '').trim(), li_content: String(parsed.linkedin || '').trim(), yt_content: String(parsed.youtube || youtubeDescription || youtubeTitle || 'Video EPCB').trim(), youtubeTitle, youtubeDescription } }];"
+      },
+      "id": "f2a6c8e4-1b73-4d90-8f25-7c3e9a5b6d11",
+      "name": "Parse JSON AI Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-3280, 4600]
     }
   ],
   "connections": {
-    "Cấp quyền public ảnh Drive": {
+    "Cấp quyền public media Drive": {
       "main": [
         [
           {
-            "node": "Download Image - Kiểm tra binary",
+            "node": "Download media Drive - Kiểm tra binary",
             "type": "main",
             "index": 0
           }
@@ -483,11 +637,11 @@
         ]
       ]
     },
-    "Có ảnh để tải?": {
+    "Có media Drive để tải?": {
       "main": [
         [
           {
-            "node": "Tách từng URL ảnh",
+            "node": "Tách từng media Drive",
             "type": "main",
             "index": 0
           }
@@ -516,18 +670,18 @@
       "main": [
         [
           {
-            "node": "Cấp quyền public ảnh Drive",
+            "node": "Cấp quyền public media Drive",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Download Image - Kiểm tra binary": {
+    "Download media Drive - Kiểm tra binary": {
       "main": [
         [
           {
-            "node": "Tập hợp ảnh đã tải",
+            "node": "Tập hợp media Drive",
             "type": "main",
             "index": 0
           }
@@ -538,7 +692,29 @@
       "main": [
         [
           {
-            "node": "Parse JSON AI",
+            "node": "Parse JSON AI Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON AI Safe": {
+      "main": [
+        [
+          {
+            "node": "Gộp AI và ảnh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON AI Final": {
+      "main": [
+        [
+          {
+            "node": "Gộp AI và ảnh",
             "type": "main",
             "index": 0
           }
@@ -609,7 +785,7 @@
             "index": 0
           },
           {
-            "node": "Có ảnh để tải?",
+            "node": "Có media Drive để tải?",
             "type": "main",
             "index": 0
           }
@@ -626,6 +802,28 @@
           }
         ]
       ]
+    }
+    ,
+    "Chuẩn hóa row media Drive": {
+      "main": [[{"node": "AI tạo Facebook và LinkedIn", "type": "main", "index": 0}, {"node": "Có media Drive để tải?", "type": "main", "index": 0}]]
+    },
+    "Tách từng media Drive": {
+      "main": [[{"node": "Đổi link chia sẻ thành link tải", "type": "main", "index": 0}]]
+    },
+    "Tập hợp media Drive": {
+      "main": [[{"node": "Gộp AI và ảnh", "type": "main", "index": 1}]]
+    },
+    "Chuẩn hóa row media Drive Safe": {
+      "main": [[
+        {"node": "AI tạo Facebook và LinkedIn", "type": "main", "index": 0},
+        {"node": "Có media Drive để tải?", "type": "main", "index": 0}
+      ]]
+    },
+    "Chuẩn hóa row media Drive Final": {
+      "main": [[
+        {"node": "AI tạo Facebook và LinkedIn", "type": "main", "index": 0},
+        {"node": "Có media Drive để tải?", "type": "main", "index": 0}
+      ]]
     }
   },
   "pinData": {},

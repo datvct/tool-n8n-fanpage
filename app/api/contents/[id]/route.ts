@@ -3,15 +3,19 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-function imageUrl(fileUrl: string) {
+function mediaUrl(fileUrl: string, kind: "image" | "video") {
   try {
     const url = new URL(fileUrl);
     if (url.hostname === "drive.google.com")
-      return `/api/media?url=${encodeURIComponent(fileUrl)}`;
+      return `/api/media?kind=${kind}&url=${encodeURIComponent(fileUrl)}`;
   } catch {
     // Keep legacy values unchanged.
   }
   return fileUrl;
+}
+
+function isVideo(fileName: string, mimeType: string | null) {
+  return mimeType?.startsWith("video/") || /\.(mp4|mov|m4v|webm|avi)$/i.test(fileName);
 }
 
 export async function GET(
@@ -40,11 +44,19 @@ export async function GET(
       employee: item.employeeName,
       note: item.originalNote,
       createdAt: item.createdAt.toISOString(),
-      images: item.media.map((media) => imageUrl(media.fileUrl)),
-      posts: item.socialPosts.map((post) => ({
-        id: post.id,
-        platform: post.platform,
-        content: post.content,
+      images: item.media
+        .filter((media) => !isVideo(media.fileName, media.mimeType))
+        .map((media) => mediaUrl(media.fileUrl, "image")),
+      videos: item.media
+        .filter((media) => isVideo(media.fileName, media.mimeType))
+        .map((media) => mediaUrl(media.fileUrl, "video")),
+        posts: item.socialPosts.map((post) => ({
+          id: post.id,
+          platform: post.platform,
+          postType: post.postType,
+          content: post.content,
+          title: post.title ?? undefined,
+          description: post.description ?? undefined,
         status: post.status,
         scheduledAt: post.scheduledAt?.toISOString(),
         error: post.errorMessage ?? undefined,

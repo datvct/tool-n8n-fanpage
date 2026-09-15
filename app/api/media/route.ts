@@ -18,6 +18,7 @@ function getDriveId(value: string) {
 
 export async function GET(request: NextRequest) {
   const sourceUrl = request.nextUrl.searchParams.get("url");
+  const kind = request.nextUrl.searchParams.get("kind") === "video" ? "video" : "image";
   const fileId = sourceUrl ? getDriveId(sourceUrl) : null;
   if (!fileId)
     return NextResponse.json(
@@ -27,21 +28,35 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(
-      `https://drive.google.com/uc?export=view&id=${encodeURIComponent(fileId)}`,
-      { redirect: "follow", cache: "no-store" },
+      `https://drive.google.com/uc?export=${kind === "video" ? "download" : "view"}&confirm=t&id=${encodeURIComponent(fileId)}`,
+      {
+        redirect: "follow",
+        cache: "no-store",
+        headers: request.headers.get("range") ? { Range: request.headers.get("range")! } : undefined,
+      },
     );
     const contentType = response.headers.get("content-type") || "";
-    if (!response.ok || !contentType.startsWith("image/"))
+    const isValidMedia = kind === "video"
+      ? contentType.startsWith("video/") || contentType === "application/octet-stream" || contentType === "application/mp4"
+      : contentType.startsWith("image/");
+    if (!response.ok || !isValidMedia)
       return NextResponse.json(
-        { error: "File Drive không public hoặc không phải file ảnh." },
+        { error: `File Drive không public hoặc không phải file ${kind}.` },
         { status: 404 },
       );
 
-    return new NextResponse(await response.arrayBuffer(), {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=3600, s-maxage=3600",
-      },
+    const headers = new Headers({
+      "Content-Type": kind === "video" && !contentType.startsWith("video/") ? "video/mp4" : contentType,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+    });
+    const contentLength = response.headers.get("content-length");
+    const contentRange = response.headers.get("content-range");
+    if (contentLength) headers.set("Content-Length", contentLength);
+    if (contentRange) headers.set("Content-Range", contentRange);
+    return new NextResponse(kind === "video" ? response.body : await response.arrayBuffer(), {
+      headers,
+      status: response.status,
     });
   } catch (error) {
     console.error("Failed to proxy Google Drive image", error);

@@ -1,4 +1,9 @@
-export type Platform = "facebook" | "linkedin";
+export type Platform = "facebook" | "linkedin" | "youtube";
+export type PostType =
+  | "post"
+  | "facebook_reel"
+  | "youtube_short"
+  | "youtube_video";
 export type ContentStatus =
   | "draft"
   | "approved"
@@ -9,7 +14,10 @@ export type ContentStatus =
 export type SocialPost = {
   id: string;
   platform: Platform;
+  postType: PostType;
   content: string;
+  title?: string;
+  description?: string;
   status: ContentStatus;
   scheduledAt?: string;
   error?: string;
@@ -21,5 +29,6 @@ export type ContentItem = {
   note: string;
   createdAt: string;
   images: string[];
+  videos: string[];
   posts: SocialPost[];
 };

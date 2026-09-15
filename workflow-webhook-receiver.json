@@ -2,54 +2,923 @@
   "nodes": [
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "content-manager/publish-event",
-        "authentication": "headerAuth",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.platform }}",
+                    "rightValue": "linkedin",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8abefc6a-d73d-472e-bed6-2e6d8e618242"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "LinkedIn"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a293916c-5823-4df1-bc5a-cebf5fb3c481",
+                    "leftValue": "={{ $json.platform }}",
+                    "rightValue": "facebook",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Facebook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1c8bb899-28ed-4319-baeb-4473570968a9",
+                    "leftValue": "={{ $json.platform }}",
+                    "rightValue": "youtube",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Youtube"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "51a3f151-e796-41f2-aa5d-5ee49022f0e4",
-      "name": "Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
       "position": [
-        -5040,
+        -4560,
         688
       ],
-      "webhookId": "e1ac52bc-486e-4528-9a60-b9d4df187790",
+      "id": "8eae410d-94fe-4a43-9c18-9f7bc3c51457",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "me",
+        "edge": "feed",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "message",
+                "value": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}"
+              },
+              {
+                "name": "attached_media",
+                "value": "={{ $json.attached_media }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -2464,
+        176
+      ],
+      "id": "c5776076-0038-40d6-a710-b293d11f4dfd",
+      "name": "Facebook Graph API",
       "credentials": {
-        "httpHeaderAuth": {
-          "id": "Ei2zqPtVSkiZl7In",
-          "name": "Header Auth account"
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "25608495-7f5b-4438-a823-82fbaac36957",
+              "name": "media_fbid",
+              "value": "={{ $json.body.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2896,
+        176
+      ],
+      "id": "26f11bef-87ec-407e-8abf-d33540980226",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "00259283-9a82-44d4-ab19-58943017fc4e",
+      "name": "Callback Backend Published Facebook with images",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2096,
+        48
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "6ba07be2-4fe7-4a03-84a8-f151df602faf",
+      "name": "Callback Backend Facebook Upload Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2896,
+        432
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "0f72c44f-bb0c-4e5d-b4c3-c948ed96e212",
+      "name": "Callback Backend Published Facebook Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3232,
+        560
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "ce0be8c6-1b13-470f-a93c-b45f4a181523",
+      "name": "Callback Backend Failed Facebook Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3232,
+        768
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "0c186cf6-85cc-4942-a362-c73acc26d446",
+      "name": "Callback Backend Failed Post Multi-Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1184,
+        -496
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "47ff985b-48b8-4426-9496-307fe9186c36",
+      "name": "Callback Backend Published Linkedin Multi Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1184,
+        -704
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://4110-14-224-216-170.ngrok-free.app/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "d96b7e06-9bf3-4f59-a60d-50a295e0e9fa",
+      "name": "Callback Backend Published Linkedin Single Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2560,
+        -288
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "25dd382e-03dc-47e5-afb6-d236a49c11da",
+      "name": "Callback Backend Failed Post Single Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2560,
+        -64
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "37a23b30-4cfe-4144-b651-b8fcc76f5b29",
+      "name": "Callback Backend Failed Linkedin No Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3456,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "e83b5b7f-ed38-4db5-8d22-ae5a5d64a2b5",
+      "name": "Callback Backend Published Linkedin No Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3456,
+        -112
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "00d2dd87-51e3-4052-9b9f-31852595bf2e",
+      "name": "Callback Backend Failed download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3056,
+        -304
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "9884dc19-08d5-46a3-88ed-856ab4e58611",
+      "name": "Callback Backend Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2096,
+        272
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/me/feed",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.content }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "c7314ff0-c167-42b3-bdec-ebd9a3622fb1",
+      "name": "Publish Facebook Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3536,
+        672
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "attached_media",
+        "options": {}
+      },
+      "id": "7831b79a-c620-4d62-b575-511a50e4ffeb",
+      "name": "Aggregate Facebook Photo IDs",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -2672,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/me/photos",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "url",
+              "value": "={{ $json.image_url }}"
+            },
+            {
+              "name": "published",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "1f8e6c67-933f-494c-8727-6c5fd779f7a0",
+      "name": "Facebook Upload Photo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3232,
+        352
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fb-image-check",
+              "leftValue": "={{ $json.image_count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "259ea5a2-510e-482d-9b58-43116f85caff",
+      "name": "Facebook Has Images",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3616,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media.filter((item) => item?.url) : [];\nif (!media.length) return [{ json: { ...payload, image_count: 0, image_url: '' } }];\nreturn media.map((item, index) => ({ json: { ...payload, image_url: item.url, image_index: index, image_count: media.length } }));"
+      },
+      "id": "263dc940-46a9-4a08-9fd3-cf80c7a6a639",
+      "name": "Prepare Facebook Images",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3856,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "person": "KXKYbYytUS",
+        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
+        "additionalFields": {}
+      },
+      "id": "801b59d5-1ae8-4935-8b2c-0fb9fb9e6036",
+      "name": "Create a post  no image",
+      "type": "n8n-nodes-base.linkedIn",
+      "position": [
+        -3824,
+        32
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "person": "KXKYbYytUS",
+        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
+        "shareMediaCategory": "=IMAGE",
+        "additionalFields": {}
+      },
+      "id": "68a2e832-4220-4191-ad23-5b8a62b7d255",
+      "name": "Create a post with single image",
+      "type": "n8n-nodes-base.linkedIn",
+      "position": [
+        -2800,
+        -272
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Linkedin-Version",
+              "value": "202601"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"initializeUploadRequest\": {\n    \"owner\": \"urn:li:person:{{ $json.sub }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2096,
+        -400
+      ],
+      "id": "4466017f-47ee-4a33-baa0-93a3b9c53682",
+      "name": "Initialize Upload",
+      "alwaysOutputData": false,
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
         }
       }
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nif (!['facebook', 'linkedin'].includes(String(body.platform))) throw new Error('Unsupported platform');\nif (!String(body.content || '').trim()) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\nconst media = Array.isArray(body.media) ? body.media.filter((item) => item?.url) : [];\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform: body.platform, content: String(body.content), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
+        "url": "https://api.linkedin.com/v2/userinfo",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "options": {}
       },
-      "id": "7cd19055-12a0-4e85-b826-6d92e34f1d79",
-      "name": "Chuẩn hóa dữ liệu publish",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
       "position": [
-        -4768,
-        688
-      ]
+        -2272,
+        -400
+      ],
+      "id": "ee1bb9cc-0a96-4215-95b0-5fa41058ad0a",
+      "name": "Oauth get info Linkedin",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/rest/posts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "linkedInOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Linkedin-Version",
+              "value": "202601"
+            },
+            {
+              "name": "X-Restli-Protocol-Version",
+              "value": "2.0.0"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"author\": \"urn:li:person:{{ $('Oauth get info Linkedin').first().json.sub }}\",\n  \"commentary\": {{ JSON.stringify($('Webhook').item.json.body.content.final_post )}},\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false,\n  \"content\": {\n    \"multiImage\": {\n      \"images\": {{ JSON.stringify($json.images.map(id => ({ id }))) }}\n    }\n  }\n}\n",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1440,
+        -608
+      ],
+      "id": "0b077471-0b6b-4540-b0bf-0c8dc45128e0",
+      "name": "Create Multi-Image Post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "eroeiQ2NRFppcUdS",
+          "name": "LinkedIn account - Lợi"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "image",
+              "renameField": true,
+              "outputFieldName": "images"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1664,
+        -608
+      ],
+      "id": "f88f81c1-4a0b-491a-b399-8ca5b3ecfa7c",
+      "name": "Aggregate"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Mode: Run Once for Each Item\n// Input: mỗi item đến từ \"Parse Image URLs\", đã có sẵn image_url, image_index, image_count\n\nlet imageUrl = $json.image_url;\n\n// Clean the URL\nimageUrl = imageUrl.trim();\n\n// Convert common sharing links to direct download links\n// Google Drive\nif (imageUrl.includes('drive.google.com/file/d/')) {\n  const fileIdMatch = imageUrl.match(/\\/d\\/([^\\/]+)/);\n  if (fileIdMatch) {\n    imageUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;\n  }\n}\n\n// Dropbox - change dl=0 to dl=1\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) {\n  imageUrl = imageUrl.replace('dl=0', 'dl=1');\n}\n\n// Imgur - convert to direct image link\nif (imageUrl.includes('imgur.com/') && !imageUrl.includes('i.imgur.com')) {\n  imageUrl = imageUrl.replace('imgur.com/', 'i.imgur.com/') + '.jpg';\n}\n\n// OneDrive/SharePoint\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) {\n  imageUrl = imageUrl.split('?')[0] + '?download=1';\n}\n\nreturn {\n  json: {\n    original_url: $json.image_url,\n    direct_download_url: imageUrl,\n    image_index: $json.image_index,\n    image_count: $json.image_count\n  }\n};"
+        "jsCode": "return {\n  json: {\n    image: $('Merge').item.json.value.image\n  }\n};"
       },
-      "id": "c5f8ff5b-0bf9-4dc0-93ba-8c6db29e95f8",
-      "name": "Convert Share Link to Download Link",
       "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
-        -3664,
-        480
+        -1856,
+        -608
       ],
-      "typeVersion": 2
+      "id": "cfb3eec0-2f66-404f-93b4-654dc5444793",
+      "name": "Extract Image URN"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.value.uploadUrl }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2048,
+        -608
+      ],
+      "id": "e5baf708-dd72-4d84-972b-52bb73442288",
+      "name": "Upload Binary"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2288,
+        -608
+      ],
+      "id": "02caae88-7d16-41b7-97ae-36289e7ee5eb",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.direct_download_url || $json.output.download_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "ccc271d1-7021-4aab-8734-d7a71f50af5e",
+      "name": "Download Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -3360,
+        -416
+      ],
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9516b53e-9ff9-4ff9-906b-bb30b132ba1f",
+              "leftValue": "={{ $json.image_count }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3008,
+        -608
+      ],
+      "id": "4cbd98c7-eecd-46f3-8de8-47a7bbf70286",
+      "name": "Check Multi Image"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first()?.json || {};\nconst legacyRaw = payload.linkHinhAnh || payload.content?.linkHinhAnh || '';\nconst legacyUrls = String(legacyRaw).split(/[,\\n]+/).map((url) => url.trim()).filter(Boolean);\nconst media = Array.isArray(payload.media) && payload.media.length ? payload.media : legacyUrls.map((url) => ({ url }));\nconst uniqueMedia = [...new Map(media.filter((item) => item?.url).map((item) => [item.url, item])).values()];\nif (!uniqueMedia.length) return [{ json: { ...payload, image_url: '', image_index: -1, image_count: 0, images: [] } }];\nreturn uniqueMedia.map((image, index) => ({ json: { ...payload, image_url: image.url, image_index: index, image_count: uniqueMedia.length, images: uniqueMedia } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3952,
+        -416
+      ],
+      "id": "f0d05135-d5ad-4132-b499-f2cef48c12dd",
+      "name": "Parse Image URLs"
     },
     {
       "parameters": {
@@ -86,16 +955,187 @@
     },
     {
       "parameters": {
-        "jsCode": "const payload = $input.first()?.json || {};\nconst legacyRaw = payload.linkHinhAnh || payload.content?.linkHinhAnh || '';\nconst legacyUrls = String(legacyRaw).split(/[,\\n]+/).map((url) => url.trim()).filter(Boolean);\nconst media = Array.isArray(payload.media) && payload.media.length ? payload.media : legacyUrls.map((url) => ({ url }));\nconst uniqueMedia = [...new Map(media.filter((item) => item?.url).map((item) => [item.url, item])).values()];\nif (!uniqueMedia.length) return [{ json: { ...payload, image_url: '', image_index: -1, image_count: 0, images: [] } }];\nreturn uniqueMedia.map((image, index) => ({ json: { ...payload, image_url: image.url, image_index: index, image_count: uniqueMedia.length, images: uniqueMedia } }));"
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Mode: Run Once for Each Item\n// Input: mỗi item đến từ \"Parse Image URLs\", đã có sẵn image_url, image_index, image_count\n\nlet imageUrl = $json.image_url;\n\n// Clean the URL\nimageUrl = imageUrl.trim();\n\n// Convert common sharing links to direct download links\n// Google Drive\nif (imageUrl.includes('drive.google.com/file/d/')) {\n  const fileIdMatch = imageUrl.match(/\\/d\\/([^\\/]+)/);\n  if (fileIdMatch) {\n    imageUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;\n  }\n}\n\n// Dropbox - change dl=0 to dl=1\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) {\n  imageUrl = imageUrl.replace('dl=0', 'dl=1');\n}\n\n// Imgur - convert to direct image link\nif (imageUrl.includes('imgur.com/') && !imageUrl.includes('i.imgur.com')) {\n  imageUrl = imageUrl.replace('imgur.com/', 'i.imgur.com/') + '.jpg';\n}\n\n// OneDrive/SharePoint\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) {\n  imageUrl = imageUrl.split('?')[0] + '?download=1';\n}\n\nreturn {\n  json: {\n    original_url: $json.image_url,\n    direct_download_url: imageUrl,\n    image_index: $json.image_index,\n    image_count: $json.image_count\n  }\n};"
       },
+      "id": "c5f8ff5b-0bf9-4dc0-93ba-8c6db29e95f8",
+      "name": "Convert Share Link to Download Link",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -3648,
+        -416
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nconst platform = String(body.platform || '').trim().toLowerCase();\nif (!['facebook', 'linkedin', 'youtube'].includes(platform)) throw new Error('Unsupported platform');\nconst postType = String(body.postType || 'post').trim().toLowerCase();\nconst content = String(body.content || body.description || body.title || '').trim();\nif (!content) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\n\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  url = url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n  const driveMatch = url.match(/drive\\.google\\.com\\/file\\/d\\/([A-Za-z0-9_-]+)/) || url.match(/[?&]id=([A-Za-z0-9_-]+)/);\n  if (driveMatch && url.includes('drive.google.com')) {\n    url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  }\n  return url;\n};\n\nconst rawMedia = Array.isArray(body.media) ? body.media : (Array.isArray(body.mediaUrls) ? body.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\n\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform, postType, content, title: String(body.title || '').trim(), description: String(body.description || '').trim(), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
+      },
+      "id": "7cd19055-12a0-4e85-b826-6d92e34f1d79",
+      "name": "Chuẩn hóa dữ liệu publish",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3936,
-        464
+        -5104,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-manager/publish-event",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "51a3f151-e796-41f2-aa5d-5ee49022f0e4",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -5376,
+        672
       ],
-      "id": "f0d05135-d5ad-4132-b499-f2cef48c12dd",
-      "name": "Parse Image URLs"
+      "webhookId": "e1ac52bc-486e-4528-9a60-b9d4df187790",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Ei2zqPtVSkiZl7In",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media : [];\nconst video = media.find((item) => String(item?.mimeType || '').startsWith('video/')) || media.find((item) => item?.videoUrl || /video/i.test(String(item?.fileName || '')));\nif (!video?.url) throw new Error('Missing YouTube video URL');\nreturn { json: { ...payload, video_url: video.url, youtube_title: String(payload.title || 'EPCB Video').slice(0, 100), youtube_description: payload.description || payload.content } };"
+      },
+      "id": "ec0419e7-881a-4a51-b4e5-bcb1ed949ab1",
+      "name": "Prepare YouTube Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4272,
+        1856
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video_url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "62cdf291-7e70-49a7-9ba0-5e3f210e67e8",
+      "name": "Download YouTube Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3968,
+        1840
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Prepare YouTube Video').item.json.youtube_title }}",
+        "regionCode": "VN",
+        "categoryId": "22",
+        "binaryProperty": "=data",
+        "options": {
+          "description": "={{ $('Prepare YouTube Video').item.json.youtube_description }}",
+          "notifySubscribers": true,
+          "privacyStatus": "public"
+        }
+      },
+      "id": "fed44b38-e5fb-4124-9253-c0b60e1ae14e",
+      "name": "Upload YouTube Video",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -3680,
+        1824
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'published', externalPostId: $json.id || $json.videoId || $json.uploadId || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "e704156a-c626-4c35-8562-efa30b1008c9",
+      "name": "Callback Backend Published YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3264,
+        1696
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "a25d5fb1-5bf9-4d6c-9ee0-bd8047a7f93c",
+      "name": "Callback Backend Failed YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3376,
+        2128
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json;\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  const driveMatch = url.match(new RegExp('(?:/d/|[?&]id=)([A-Za-z0-9_-]+)'));\n  if (driveMatch && url.includes('drive.google.com')) url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  return url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n};\nconst rawMedia = Array.isArray(payload.media) ? payload.media : (Array.isArray(payload.mediaUrls) ? payload.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\nreturn [{ json: { ...payload, media, mediaUrls: media.map((item) => item.url) } }];"
+      },
+      "id": "eb48af67-0852-4dcd-95c5-41cc7036ce5e",
+      "name": "Chuẩn hóa URL media Drive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4800,
+        688
+      ]
     },
     {
       "parameters": {
@@ -108,12 +1148,12 @@
           },
           "conditions": [
             {
-              "id": "9516b53e-9ff9-4ff9-906b-bb30b132ba1f",
-              "leftValue": "={{ $json.image_count }}",
-              "rightValue": 1,
+              "id": "f10823c1-3c2b-4849-b29e-c27798dadf97",
+              "leftValue": "={{ $json.postType }}",
+              "rightValue": "post",
               "operator": {
-                "type": "number",
-                "operation": "gt"
+                "type": "string",
+                "operation": "equals"
               }
             }
           ],
@@ -124,15 +1164,29 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -2816,
-        48
+        -4224,
+        752
       ],
-      "id": "4cbd98c7-eecd-46f3-8de8-47a7bbf70286",
-      "name": "Check Multi Image"
+      "id": "b0af5673-b861-4721-9485-247fb2ef1c41",
+      "name": "If check Post Type"
     },
     {
       "parameters": {
-        "url": "={{ $json.direct_download_url || $json.output.download_url }}",
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media : [];\nconst video = media.find((item) => String(item?.mimeType || '').startsWith('video/')) || media.find((item) => item?.videoUrl || /video/i.test(String(item?.fileName || '')));\nif (!video?.url) throw new Error('Missing Facebook Reel video URL');\nreturn { json: { ...payload, video_url: video.url, reel_title: String(payload.title || '').slice(0, 100), reel_description: payload.description || payload.content } };"
+      },
+      "id": "31b25901-6e40-493b-a1b6-8382b0b7ee34",
+      "name": "Prepare Facebook Reel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3936,
+        1392
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video_url }}",
         "options": {
           "response": {
             "response": {
@@ -141,48 +1195,48 @@
           }
         }
       },
-      "id": "ccc271d1-7021-4aab-8734-d7a71f50af5e",
-      "name": "Download Image",
+      "id": "47bd3255-b3db-4408-828a-3c2d17e4f499",
+      "name": "Download Facebook Reel Video",
       "type": "n8n-nodes-base.httpRequest",
-      "position": [
-        -3456,
-        496
-      ],
       "typeVersion": 4.2,
+      "position": [
+        -3664,
+        976
+      ],
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "46e8311b-ef84-4e79-9d89-d8207521e5c6",
-              "operator": {
-                "type": "string",
-                "operation": "equals"
-              },
-              "leftValue": "={{ $json.platform }}",
-              "rightValue": "linkedin"
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "me",
+        "edge": "video_reels",
+        "options": {
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "upload_phase",
+                "value": "start"
+              }
+            ]
+          }
+        }
       },
-      "id": "2672b135-c7ab-46c8-befc-0426d55a2df9",
-      "name": "Check platform",
-      "type": "n8n-nodes-base.if",
+      "id": "5c49fb5a-8334-41fa-83ae-da30149cb4da",
+      "name": "Facebook Reel Start Upload",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
       "position": [
-        -4560,
-        704
+        -3552,
+        1376
       ],
-      "typeVersion": 2.2
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -190,399 +1244,182 @@
         "combineBy": "combineByPosition",
         "options": {}
       },
+      "id": "1ddfca68-f76e-4b52-8d96-f52582b7b423",
+      "name": "Merge Facebook Reel Video And Session",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -2352,
-        112
-      ],
-      "id": "02caae88-7d16-41b7-97ae-36289e7ee5eb",
-      "name": "Merge"
+        -3104,
+        976
+      ]
     },
     {
       "parameters": {
-        "method": "PUT",
-        "url": "={{ $json.value.uploadUrl }}",
+        "mode": "runOnceForEachItem",
+        "jsCode": "const source = $binary?.data;\nif (!source) throw new Error('Facebook Reel upload requires binary data field data');\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nif (!buffer?.length) throw new Error('Facebook Reel video binary is empty');\nconst binary = await this.helpers.prepareBinaryData(buffer, source.fileName || 'facebook-reel.mp4', source.mimeType || 'video/mp4');\nreturn { json: { ...$json, reel_file_size: buffer.length }, binary: { data: binary } };"
+      },
+      "id": "f1e70fb2-7c28-4d6a-9e15-3b0c8a52d4f1",
+      "name": "Chuẩn bị binary Facebook Reel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2992,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.upload_url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "facebookGraphApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "offset",
+              "value": "0"
+            },
+            {
+              "name": "file_size",
+              "value": "={{ $json.reel_file_size }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
         "sendBody": true,
         "contentType": "binaryData",
         "inputDataFieldName": "data",
         "options": {}
       },
+      "id": "caad593b-ff4a-41bf-9ebe-d4e93556526e",
+      "name": "Facebook Reel Upload Binary",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "typeVersion": 4.2,
       "position": [
-        -2064,
-        112
+        -2864,
+        976
       ],
-      "id": "e5baf708-dd72-4d84-972b-52bb73442288",
-      "name": "Upload Binary"
-    },
-    {
-      "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "return {\n  json: {\n    image: $('Merge').item.json.value.image\n  }\n};"
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1840,
-        112
-      ],
-      "id": "cfb3eec0-2f66-404f-93b4-654dc5444793",
-      "name": "Extract Image URN"
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "fieldsToAggregate": {
-          "fieldToAggregate": [
-            {
-              "fieldToAggregate": "image",
-              "renameField": true,
-              "outputFieldName": "images"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
-      "position": [
-        -1648,
-        112
-      ],
-      "id": "f88f81c1-4a0b-491a-b399-8ca5b3ecfa7c",
-      "name": "Aggregate"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.linkedin.com/rest/posts",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "linkedInOAuth2Api",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Linkedin-Version",
-              "value": "202601"
-            },
-            {
-              "name": "X-Restli-Protocol-Version",
-              "value": "2.0.0"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"author\": \"urn:li:person:{{ $('Oauth get info Linkedin').first().json.sub }}\",\n  \"commentary\": {{ JSON.stringify($('Webhook').item.json.body.content.final_post )}},\n  \"visibility\": \"PUBLIC\",\n  \"distribution\": {\n    \"feedDistribution\": \"MAIN_FEED\",\n    \"targetEntities\": [],\n    \"thirdPartyDistributionChannels\": []\n  },\n  \"lifecycleState\": \"PUBLISHED\",\n  \"isReshareDisabledByAuthor\": false,\n  \"content\": {\n    \"multiImage\": {\n      \"images\": {{ JSON.stringify($json.images.map(id => ({ id }))) }}\n    }\n  }\n}\n",
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "me",
+        "edge": "video_reels",
         "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          }
-        }
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -1424,
-        112
-      ],
-      "id": "0b077471-0b6b-4540-b0bf-0c8dc45128e0",
-      "name": "Create Multi-Image Post",
-      "credentials": {
-        "linkedInOAuth2Api": {
-          "id": "eroeiQ2NRFppcUdS",
-          "name": "LinkedIn account - Lợi"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "url": "https://api.linkedin.com/v2/userinfo",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "linkedInOAuth2Api",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -2352,
-        304
-      ],
-      "id": "ee1bb9cc-0a96-4215-95b0-5fa41058ad0a",
-      "name": "Oauth get info Linkedin",
-      "credentials": {
-        "linkedInOAuth2Api": {
-          "id": "eroeiQ2NRFppcUdS",
-          "name": "LinkedIn account - Lợi"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://api.linkedin.com/rest/images?action=initializeUpload",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "linkedInOAuth2Api",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Linkedin-Version",
-              "value": "202601"
-            },
-            {
-              "name": "X-Restli-Protocol-Version",
-              "value": "2.0.0"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"initializeUploadRequest\": {\n    \"owner\": \"urn:li:person:{{ $json.sub }}\"\n  }\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -2064,
-        304
-      ],
-      "id": "4466017f-47ee-4a33-baa0-93a3b9c53682",
-      "name": "Initialize Upload",
-      "alwaysOutputData": false,
-      "credentials": {
-        "linkedInOAuth2Api": {
-          "id": "eroeiQ2NRFppcUdS",
-          "name": "LinkedIn account - Lợi"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "person": "KXKYbYytUS",
-        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
-        "shareMediaCategory": "=IMAGE",
-        "additionalFields": {}
-      },
-      "id": "68a2e832-4220-4191-ad23-5b8a62b7d255",
-      "name": "Create a post with single image",
-      "type": "n8n-nodes-base.linkedIn",
-      "position": [
-        -2848,
-        480
-      ],
-      "typeVersion": 1,
-      "credentials": {
-        "linkedInOAuth2Api": {
-          "id": "eroeiQ2NRFppcUdS",
-          "name": "LinkedIn account - Lợi"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "person": "KXKYbYytUS",
-        "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
-        "additionalFields": {}
-      },
-      "id": "801b59d5-1ae8-4935-8b2c-0fb9fb9e6036",
-      "name": "Create a post  no image",
-      "type": "n8n-nodes-base.linkedIn",
-      "position": [
-        -3888,
-        704
-      ],
-      "typeVersion": 1,
-      "credentials": {
-        "linkedInOAuth2Api": {
-          "id": "eroeiQ2NRFppcUdS",
-          "name": "LinkedIn account - Lợi"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media.filter((item) => item?.url) : [];\nif (!media.length) return [{ json: { ...payload, image_count: 0, image_url: '' } }];\nreturn media.map((item, index) => ({ json: { ...payload, image_url: item.url, image_index: index, image_count: media.length } }));"
-      },
-      "id": "263dc940-46a9-4a08-9fd3-cf80c7a6a639",
-      "name": "Prepare Facebook Images",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -4336,
-        960
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "fb-image-check",
-              "leftValue": "={{ $json.image_count }}",
-              "rightValue": 0,
-              "operator": {
-                "type": "number",
-                "operation": "gt"
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "video_id",
+                "value": "={{ $('Facebook Reel Start Upload').item.json.video_id }}"
+              },
+              {
+                "name": "upload_phase",
+                "value": "finish"
+              },
+              {
+                "name": "video_state",
+                "value": "PUBLISHED"
+              },
+              {
+                "name": "title",
+                "value": "={{ $('Prepare Facebook Reel').item.json.reel_title }}"
+              },
+              {
+                "name": "description",
+                "value": "={{ $('Prepare Facebook Reel').item.json.reel_description }}"
               }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+            ]
+          }
+        }
       },
-      "id": "259ea5a2-510e-482d-9b58-43116f85caff",
-      "name": "Facebook Has Images",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "id": "4728a89b-40e8-4edd-983d-7b0acd52bcf8",
+      "name": "Facebook Reel Finish Publish",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
       "position": [
-        -4096,
+        -2512,
         960
-      ]
+      ],
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "saqRMkpYGxTmEgQg",
+          "name": "Facebook Graph account"
+        }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://graph.facebook.com/v20.0/me/photos",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "facebookGraphApi",
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
           "parameters": [
             {
-              "name": "url",
-              "value": "={{ $json.image_url }}"
-            },
-            {
-              "name": "published",
-              "value": "false"
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
             }
           ]
         },
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          }
-        }
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'published', externalPostId: $('Facebook Reel Start Upload').first().json.video_id || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
       },
-      "id": "1f8e6c67-933f-494c-8727-6c5fd779f7a0",
-      "name": "Facebook Upload Photo",
+      "id": "899b0936-bbf8-4010-9707-d0ed20017ccb",
+      "name": "Callback Backend Published Facebook Reel",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "typeVersion": 4.2,
       "position": [
-        -3296,
+        -2240,
+        848
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "8a64232e-0d11-4244-9844-89b5c32dba90",
+      "name": "Callback Backend Failed Download Facebook Reel Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3504,
         1104
       ],
-      "credentials": {
-        "facebookGraphApi": {
-          "id": "saqRMkpYGxTmEgQg",
-          "name": "Facebook Graph account"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "destinationFieldName": "attached_media",
-        "options": {}
-      },
-      "id": "7831b79a-c620-4d62-b575-511a50e4ffeb",
-      "name": "Aggregate Facebook Photo IDs",
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
-      "position": [
-        -2688,
-        944
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://graph.facebook.com/v20.0/me/feed",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "facebookGraphApi",
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "message",
-              "value": "={{ $json.content }}"
-            }
-          ]
-        },
-        "options": {
-          "response": {
-            "response": {
-              "fullResponse": true
-            }
-          }
-        }
-      },
-      "id": "c7314ff0-c167-42b3-bdec-ebd9a3622fb1",
-      "name": "Publish Facebook Text",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -3872,
-        1312
-      ],
-      "credentials": {
-        "facebookGraphApi": {
-          "id": "saqRMkpYGxTmEgQg",
-          "name": "Facebook Graph account"
-        }
-      },
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "9884dc19-08d5-46a3-88ed-856ab4e58611",
-      "name": "Callback Backend Failed",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -2192,
-        1280
-      ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -594,211 +1431,15 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "00d2dd87-51e3-4052-9b9f-31852595bf2e",
-      "name": "Callback Backend Failed download Image",
+      "id": "7190ccb2-93d1-44f0-9663-f7d8784b773d",
+      "name": "Callback Backend Failed Facebook Reel Start Upload",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "typeVersion": 4.2,
       "position": [
-        -3168,
-        608
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "e83b5b7f-ed38-4db5-8d22-ae5a5d64a2b5",
-      "name": "Callback Backend Published Linkedin No Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -3552,
-        640
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "37a23b30-4cfe-4144-b651-b8fcc76f5b29",
-      "name": "Callback Backend Failed Linkedin No Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -3536,
-        864
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "25dd382e-03dc-47e5-afb6-d236a49c11da",
-      "name": "Callback Backend Failed Post Single Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -2640,
-        672
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://834f-14-224-216-170.ngrok-free.app/",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "d96b7e06-9bf3-4f59-a60d-50a295e0e9fa",
-      "name": "Callback Backend Published Linkedin Single Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -2592,
-        400
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "47ff985b-48b8-4426-9496-307fe9186c36",
-      "name": "Callback Backend Published Linkedin Multi Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -1152,
-        0
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "=https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "0c186cf6-85cc-4942-a362-c73acc26d446",
-      "name": "Callback Backend Failed Post Multi-Image",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -1104,
-        304
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "ce0be8c6-1b13-470f-a93c-b45f4a181523",
-      "name": "Callback Backend Failed Facebook Text",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -3584,
+        -3312,
         1472
       ],
       "onError": "continueRegularOutput"
@@ -806,7 +1447,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -818,23 +1459,23 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "0f72c44f-bb0c-4e5d-b4c3-c948ed96e212",
-      "name": "Callback Backend Published Facebook Text",
+      "id": "8393a8d2-12fc-452f-85b1-a69aa1bf0b12",
+      "name": "Callback Backend Failed Facebook Reel Upload Binary",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "typeVersion": 4.2,
       "position": [
-        -3616,
-        1248
+        -2624,
+        1152
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -846,213 +1487,78 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "6ba07be2-4fe7-4a03-84a8-f151df602faf",
-      "name": "Callback Backend Facebook Upload Photo",
+      "id": "13930edf-027d-43b8-817e-0d5311ed8dda",
+      "name": "Callback Backend Failed Facebook Reel Finish Publish",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -3040,
-        1232
-      ],
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://834f-14-224-216-170.ngrok-free.app/api/publish/callback",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "x-publish-key",
-              "value": "=epcb-publish-secret-2026"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
-        "options": {}
-      },
-      "id": "00259283-9a82-44d4-ab19-58943017fc4e",
-      "name": "Callback Backend Published Facebook with images",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "typeVersion": 4.2,
       "position": [
         -2240,
-        768
+        1104
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "id": "25608495-7f5b-4438-a823-82fbaac36957",
-              "name": "media_fbid",
-              "value": "={{ $json.body.id }}",
-              "type": "string"
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
             }
           ]
         },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "id": "5668191b-f1f2-4482-89a4-bea040afb17f",
+      "name": "Callback Backend Failed Download YouTube Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        -3072,
-        944
+        -3792,
+        2064
       ],
-      "id": "26f11bef-87ec-407e-8abf-d33540980226",
-      "name": "Edit Fields"
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "httpRequestMethod": "POST",
-        "graphApiVersion": "v22.0",
-        "node": "me",
-        "edge": "feed",
-        "options": {
-          "queryParameters": {
-            "parameter": [
-              {
-                "name": "message",
-                "value": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}"
-              },
-              {
-                "name": "attached_media",
-                "value": "={{ $json.attached_media }}"
-              }
-            ]
-          }
-        }
+        "method": "POST",
+        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
       },
-      "type": "n8n-nodes-base.facebookGraphApi",
-      "typeVersion": 1,
+      "id": "93513a87-3a00-4b05-a89c-7e28e9ba6c45",
+      "name": "Callback Backend Failed Prepare YouTube Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        -2480,
-        944
+        -4064,
+        2080
       ],
-      "id": "c5776076-0038-40d6-a710-b293d11f4dfd",
-      "name": "Facebook Graph API",
-      "credentials": {
-        "facebookGraphApi": {
-          "id": "saqRMkpYGxTmEgQg",
-          "name": "Facebook Graph account"
-        }
-      },
-      "onError": "continueErrorOutput"
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
-    "Webhook": {
-      "main": [
-        [
-          {
-            "node": "Chuẩn hóa dữ liệu publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Chuẩn hóa dữ liệu publish": {
-      "main": [
-        [
-          {
-            "node": "Check platform",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Convert Share Link to Download Link": {
-      "main": [
-        [
-          {
-            "node": "Download Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Validate Image URL": {
-      "main": [
-        [
-          {
-            "node": "Parse Image URLs",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create a post  no image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse Image URLs": {
-      "main": [
-        [
-          {
-            "node": "Convert Share Link to Download Link",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Multi Image": {
-      "main": [
-        [
-          {
-            "node": "Oauth get info Linkedin",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Create a post with single image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Download Image": {
-      "main": [
-        [
-          {
-            "node": "Check Multi Image",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Callback Backend Failed download Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check platform": {
+    "Switch": {
       "main": [
         [
           {
@@ -1063,185 +1569,43 @@
         ],
         [
           {
-            "node": "Prepare Facebook Images",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Upload Binary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Upload Binary": {
-      "main": [
-        [
-          {
-            "node": "Extract Image URN",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract Image URN": {
-      "main": [
-        [
-          {
-            "node": "Aggregate",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Aggregate": {
-      "main": [
-        [
-          {
-            "node": "Create Multi-Image Post",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Create Multi-Image Post": {
-      "main": [
-        [
-          {
-            "node": "Callback Backend Published Linkedin Multi Image",
+            "node": "If check Post Type",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Callback Backend Failed Post Multi-Image",
+            "node": "Prepare YouTube Video",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Oauth get info Linkedin": {
+    "Facebook Graph API": {
       "main": [
         [
           {
-            "node": "Initialize Upload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Initialize Upload": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 1
-          }
-        ]
-      ]
-    },
-    "Create a post with single image": {
-      "main": [
-        [
-          {
-            "node": "Callback Backend Published Linkedin Single Image",
+            "node": "Callback Backend Published Facebook with images",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Callback Backend Failed Post Single Image",
+            "node": "Callback Backend Failed",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Create a post  no image": {
+    "Edit Fields": {
       "main": [
         [
           {
-            "node": "Callback Backend Published Linkedin No Image",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Callback Backend Failed Linkedin No Image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Facebook Images": {
-      "main": [
-        [
-          {
-            "node": "Facebook Has Images",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Facebook Has Images": {
-      "main": [
-        [
-          {
-            "node": "Facebook Upload Photo",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Publish Facebook Text",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Facebook Upload Photo": {
-      "main": [
-        [
-          {
-            "node": "Edit Fields",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Callback Backend Facebook Upload Photo",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Aggregate Facebook Photo IDs": {
-      "main": [
-        [
-          {
-            "node": "Facebook Graph API",
+            "node": "Aggregate Facebook Photo IDs",
             "type": "main",
             "index": 0
           }
@@ -1266,29 +1630,475 @@
         ]
       ]
     },
-    "Edit Fields": {
+    "Aggregate Facebook Photo IDs": {
       "main": [
         [
           {
-            "node": "Aggregate Facebook Photo IDs",
+            "node": "Facebook Graph API",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Facebook Graph API": {
+    "Facebook Upload Photo": {
       "main": [
         [
           {
-            "node": "Callback Backend Published Facebook with images",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "Callback Backend Failed",
+            "node": "Callback Backend Facebook Upload Photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Has Images": {
+      "main": [
+        [
+          {
+            "node": "Facebook Upload Photo",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish Facebook Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Facebook Images": {
+      "main": [
+        [
+          {
+            "node": "Facebook Has Images",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post  no image": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published Linkedin No Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Linkedin No Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post with single image": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published Linkedin Single Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Post Single Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Upload": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Oauth get info Linkedin": {
+      "main": [
+        [
+          {
+            "node": "Initialize Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Multi-Image Post": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published Linkedin Multi Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Post Multi-Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Create Multi-Image Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image URN": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Binary": {
+      "main": [
+        [
+          {
+            "node": "Extract Image URN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Upload Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Image": {
+      "main": [
+        [
+          {
+            "node": "Check Multi Image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Multi Image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Oauth get info Linkedin",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post with single image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Image URLs": {
+      "main": [
+        [
+          {
+            "node": "Convert Share Link to Download Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Image URL": {
+      "main": [
+        [
+          {
+            "node": "Parse Image URLs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post  no image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Share Link to Download Link": {
+      "main": [
+        [
+          {
+            "node": "Download Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn hóa dữ liệu publish": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa URL media Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa dữ liệu publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Download YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Prepare YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Upload YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Download YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn hóa URL media Drive": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If check Post Type": {
+      "main": [
+        [
+          {
+            "node": "Prepare Facebook Images",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Facebook Reel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Facebook Reel": {
+      "main": [
+        [
+          {
+            "node": "Download Facebook Reel Video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook Reel Start Upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Download Facebook Reel Video": {
+      "main": [
+        [
+          {
+            "node": "Merge Facebook Reel Video And Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Download Facebook Reel Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Reel Start Upload": {
+      "main": [
+        [
+          {
+            "node": "Merge Facebook Reel Video And Session",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Facebook Reel Start Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Facebook Reel Video And Session": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị binary Facebook Reel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị binary Facebook Reel": {
+      "main": [
+        [
+          {
+            "node": "Facebook Reel Upload Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Reel Upload Binary": {
+      "main": [
+        [
+          {
+            "node": "Facebook Reel Finish Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Facebook Reel Upload Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Reel Finish Publish": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published Facebook Reel",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Facebook Reel Finish Publish",
             "type": "main",
             "index": 0
           }
@@ -1316,27 +2126,25 @@
         "params": {},
         "query": {},
         "body": {
-          "postId": "2972d2f7-bb7c-4081-ba79-7658e2f3d360",
-          "scheduledAt": "2026-09-14T04:42:00.000Z",
+          "postId": "ba6e6121-669b-4ea0-9687-70937d88fb0b",
+          "scheduledAt": "2026-09-15T03:50:00.000Z",
           "platform": "facebook",
-          "content": "🔧 Chúng tôi đang trong những giai đoạn cuối cùng để cho ra mắt sản phẩm mới tại EPCB! Hình ảnh này ghi lại khoảnh khắc tại góc hàn, nơi anh Hoàng đang tỉ mỉ gắn các mạch lại với nhau, tạo nên những sản phẩm chất lượng cao cho khách hàng. \n\nĐồng thời, bạn Khánh cũng đang lắp đặt và test sản phẩm để đảm bảo mọi thứ hoàn hảo trước khi bàn giao. Chúng tôi luôn chú trọng vào từng chi tiết nhỏ nhất, từ quy trình sản xuất đến kiểm tra sản phẩm. \n\nHãy theo dõi chúng tôi để cập nhật những hoạt động thú vị khác nhé! \n\n#EPCB #CôngNghệ #ĐộiNgũKỹThuật",
-          "employee": "Văn Công Thành Đạt",
-          "note": "- Hình ảnh này là góc hàn và tạo gắn các mạch lại của công ty EPCB\n- Khu vực này được anh Hoàng anh phụ trách và là nơi tạo ra các sản phẩm mới của công ty-- Và hình ảnh bạn Khánh nhân viên kỹ thuật đang lắp đặt test sản phẩm trước khi giao cho khách hàng",
+          "postType": "facebook_reel",
+          "content": "Mèo nhảy vui vẻ! Đón xem chú mèo hoạt hình cực kỳ dễ thương này nhé! Được sản xuất bởi AI, mèo này không chỉ đẹp mà còn mang đến nhiều tiếng cười cho bạn! Nhớ theo dõi và chia sẻ video này với bạn bè nào!",
+          "title": "Mèo nhảy vui vẻ - Hoạt Hình Dễ Thương",
+          "description": "Khám phá chú mèo hoạt hình vui nhộn được sản xuất bởi AI! Hãy thưởng thức những khoảnh khắc vui vẻ và đầy sáng tạo mà chú mèo này mang lại! #Mèo #HoạtHình #AI #VuiVẻ",
+          "employee": "Đath test",
+          "note": "",
           "media": [
             {
-              "fileId": "82d9e103-6362-4618-a168-d1e2ccbce90c",
-              "fileName": "google-drive-image-1",
-              "url": "https://drive.google.com/uc?export=view&id=1XtRNj-dBzNxj9OdbznuUnPOOMRp8z4cK"
-            },
-            {
-              "fileId": "4b7a9275-ffce-4bc9-9216-5a349bbbf197",
-              "fileName": "google-drive-image-2",
-              "url": "https://drive.google.com/uc?export=view&id=1XejjjUGZWAOJubLDYkNcE-PKFYyAe0A6"
+              "fileId": "c5981f72-8347-46c9-a8e2-7aa146607d86",
+              "fileName": "google-drive-video",
+              "url": "[https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79\\_7Zg](https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79_7Zg)",
+              "mimeType": "video/mp4"
             }
           ],
           "mediaUrls": [
-            "https://drive.google.com/uc?export=view&id=1XtRNj-dBzNxj9OdbznuUnPOOMRp8z4cK",
-            "https://drive.google.com/uc?export=view&id=1XejjjUGZWAOJubLDYkNcE-PKFYyAe0A6"
+            "[https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79\\_7Zg](https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79_7Zg)"
           ]
         },
         "webhookUrl": "https://n8n.epcb2.espitek.com/webhook/content-manager/publish-event",

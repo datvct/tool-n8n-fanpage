@@ -9,15 +9,19 @@ function toUiStatus(status: string) {
   return status;
 }
 
-function getImageUrl(fileUrl: string) {
+function getMediaUrl(fileUrl: string, kind: "image" | "video") {
   try {
     const url = new URL(fileUrl);
     if (url.hostname === "drive.google.com")
-      return `/api/media?url=${encodeURIComponent(fileUrl)}`;
+      return `/api/media?kind=${kind}&url=${encodeURIComponent(fileUrl)}`;
   } catch {
     // Keep non-URL values unchanged so the UI can still show the fallback.
   }
   return fileUrl;
+}
+
+function isVideo(fileName: string, mimeType: string | null) {
+  return mimeType?.startsWith("video/") || /\.(mp4|mov|m4v|webm|avi)$/i.test(fileName);
 }
 
 export async function GET() {
@@ -37,11 +41,19 @@ export async function GET() {
         employee: item.employeeName,
         note: item.originalNote,
         createdAt: item.createdAt.toISOString(),
-        images: item.media.map((media) => getImageUrl(media.fileUrl)),
+        images: item.media
+          .filter((media) => !isVideo(media.fileName, media.mimeType))
+          .map((media) => getMediaUrl(media.fileUrl, "image")),
+        videos: item.media
+          .filter((media) => isVideo(media.fileName, media.mimeType))
+          .map((media) => getMediaUrl(media.fileUrl, "video")),
         posts: item.socialPosts.map((post) => ({
           id: post.id,
           platform: post.platform,
+          postType: post.postType,
           content: post.content,
+          title: post.title ?? undefined,
+          description: post.description ?? undefined,
           status: toUiStatus(post.status),
           scheduledAt: post.scheduledAt?.toISOString(),
           error: post.errorMessage ?? undefined,

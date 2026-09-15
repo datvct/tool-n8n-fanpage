@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 type CallbackBody = {
   postId?: string;
-  platform?: "facebook" | "linkedin";
+  platform?: "facebook" | "linkedin" | "youtube";
   status?: "published" | "failed";
   externalPostId?: string;
   errorMessage?: string;

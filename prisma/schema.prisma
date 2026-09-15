@@ -25,6 +25,14 @@ enum ContentStatus {
 enum Platform {
   facebook
   linkedin
+  youtube
+}
+
+enum PostType {
+  post
+  facebook_reel
+  youtube_short
+  youtube_video
 }
 
 enum SocialPostStatus {
@@ -107,7 +115,10 @@ model SocialPost {
   id             String           @id @default(uuid()) @db.Uuid
   contentId      String           @map("content_id") @db.Uuid
   platform       Platform
+  postType       PostType         @default(post) @map("post_type")
   content        String           @db.Text
+  title          String?          @db.Text
+  description    String?          @db.Text
   status         SocialPostStatus  @default(draft)
   scheduledAt    DateTime?        @map("scheduled_at")
   publishedAt    DateTime?        @map("published_at")
@@ -120,6 +131,7 @@ model SocialPost {
   updatedAt      DateTime         @updatedAt @map("updated_at")
   @@index([status])
   @@index([platform])
+  @@index([postType])
   @@index([scheduledAt])
   @@index([contentId])
   @@unique([contentId, platform])
