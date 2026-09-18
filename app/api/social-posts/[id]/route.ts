@@ -11,6 +11,42 @@ type UpdateBody = {
   description?: string;
 };
 
+const VIETNAM_OFFSET = "+07:00";
+
+function parseVietnamScheduledAt(value: string): Date {
+  const normalized = value.trim().replace(" ", "T");
+  const hasExplicitTimezone = /(Z|[+-]\d{2}:?\d{2})$/i.test(normalized);
+  const date = new Date(
+    hasExplicitTimezone ? normalized : `${normalized}${VIETNAM_OFFSET}`,
+  );
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Invalid scheduledAt");
+  }
+
+  return date;
+}
+
+function formatVietnamScheduledAt(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((result, part) => {
+      if (part.type !== "literal") result[part.type] = part.value;
+      return result;
+    }, {});
+
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}+07:00`;
+}
+
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
@@ -50,12 +86,18 @@ export async function PATCH(
   if (body.title !== undefined) data.title = body.title.trim();
   if (body.description !== undefined) data.description = body.description.trim();
   if (body.scheduledAt !== undefined) {
-    data.scheduledAt = body.scheduledAt ? new Date(body.scheduledAt) : null;
-    if (data.scheduledAt && Number.isNaN(data.scheduledAt.getTime()))
-      return NextResponse.json(
-        { success: false, error: "Thời gian lên lịch không hợp lệ." },
-        { status: 400 },
-      );
+    if (!body.scheduledAt) {
+      data.scheduledAt = null;
+    } else {
+      try {
+        data.scheduledAt = parseVietnamScheduledAt(body.scheduledAt);
+      } catch {
+        return NextResponse.json(
+          { success: false, error: "Thời gian lên lịch không hợp lệ." },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   try {
@@ -94,7 +136,8 @@ export async function PATCH(
           },
           body: JSON.stringify({
             postId: post.id,
-            scheduledAt: post.scheduledAt.toISOString(),
+            scheduledAt: formatVietnamScheduledAt(post.scheduledAt),
+            scheduledAtUtc: post.scheduledAt.toISOString(),
             platform: post.platform,
             postType: post.postType,
             content: post.content,

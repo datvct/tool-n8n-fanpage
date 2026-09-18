@@ -84,10 +84,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -4560,
-        688
+        -14368,
+        4928
       ],
-      "id": "8eae410d-94fe-4a43-9c18-9f7bc3c51457",
+      "id": "f2f19d96-2cfa-4c72-9e58-a770b6aa73e6",
       "name": "Switch"
     },
     {
@@ -114,10 +114,10 @@
       "type": "n8n-nodes-base.facebookGraphApi",
       "typeVersion": 1,
       "position": [
-        -2464,
-        176
+        -12272,
+        4416
       ],
-      "id": "c5776076-0038-40d6-a710-b293d11f4dfd",
+      "id": "5f844dc9-5c34-4121-9a57-82077da00b69",
       "name": "Facebook Graph API",
       "credentials": {
         "facebookGraphApi": {
@@ -144,16 +144,16 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -2896,
-        176
+        -12704,
+        4416
       ],
-      "id": "26f11bef-87ec-407e-8abf-d33540980226",
+      "id": "94dcef1a-ef9d-4661-958a-ea77353c790f",
       "name": "Edit Fields"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -168,20 +168,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "00259283-9a82-44d4-ab19-58943017fc4e",
+      "id": "d8803b46-76cf-4c90-b6af-b3593b467851",
       "name": "Callback Backend Published Facebook with images",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2096,
-        48
+        -11904,
+        4288
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -196,20 +196,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "6ba07be2-4fe7-4a03-84a8-f151df602faf",
+      "id": "b512e0da-0f30-4b1c-8407-d90d9b2718cd",
       "name": "Callback Backend Facebook Upload Photo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2896,
-        432
+        -12704,
+        4672
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -224,20 +224,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "0f72c44f-bb0c-4e5d-b4c3-c948ed96e212",
+      "id": "45de0e9d-aa7e-46ee-b201-cc0f4d0404ad",
       "name": "Callback Backend Published Facebook Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3232,
-        560
+        -13040,
+        4800
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -252,20 +252,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "ce0be8c6-1b13-470f-a93c-b45f4a181523",
+      "id": "397b48c0-5965-4969-a6fd-65bc4d5764a5",
       "name": "Callback Backend Failed Facebook Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3232,
-        768
+        -13040,
+        5008
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "=https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -280,20 +280,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "0c186cf6-85cc-4942-a362-c73acc26d446",
+      "id": "447f2b0f-1fc6-4dfa-b092-6a00fd8a5cd0",
       "name": "Callback Backend Failed Post Multi-Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1184,
-        -496
+        -10992,
+        3744
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -308,20 +308,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "47ff985b-48b8-4426-9496-307fe9186c36",
+      "id": "3d53d060-002c-4c94-b14c-c27b867be7f6",
       "name": "Callback Backend Published Linkedin Multi Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1184,
-        -704
+        -10992,
+        3536
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://4110-14-224-216-170.ngrok-free.app/",
+        "url": "=https://content.epcb2.espitek.com/",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -336,20 +336,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "d96b7e06-9bf3-4f59-a60d-50a295e0e9fa",
+      "id": "04d7403c-5767-4b7c-9e05-04c7b3204363",
       "name": "Callback Backend Published Linkedin Single Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2560,
-        -288
+        -12368,
+        3952
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "=https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -364,20 +364,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "25dd382e-03dc-47e5-afb6-d236a49c11da",
+      "id": "5773d36d-c7da-4368-a09d-445d2a9231f3",
       "name": "Callback Backend Failed Post Single Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2560,
-        -64
+        -12368,
+        4176
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -392,20 +392,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "37a23b30-4cfe-4144-b651-b8fcc76f5b29",
+      "id": "4894fa3c-cff2-44dd-abe9-ded5945e2fcb",
       "name": "Callback Backend Failed Linkedin No Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3456,
-        96
+        -13264,
+        4336
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -420,20 +420,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'published', externalPostId: $json.body?.id || $json.body?.post_id || $json.id || $json.headers?.['x-restli-id'] || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "e83b5b7f-ed38-4db5-8d22-ae5a5d64a2b5",
+      "id": "404d21f1-711b-4e1f-abce-b244c5d73a0c",
       "name": "Callback Backend Published Linkedin No Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3456,
-        -112
+        -13264,
+        4128
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -448,20 +448,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "00d2dd87-51e3-4052-9b9f-31852595bf2e",
+      "id": "6396da51-a8e3-4cd7-b497-20817a3f8fe7",
       "name": "Callback Backend Failed download Image",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3056,
-        -304
+        -12864,
+        3936
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -476,13 +476,13 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: $('Chuẩn hóa dữ liệu publish').first().json.platform, status: 'failed', errorMessage: $json.error?.message || $json.message || 'Publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "9884dc19-08d5-46a3-88ed-856ab4e58611",
+      "id": "a024f053-ea2d-4ea4-8265-b174f86ca2b9",
       "name": "Callback Backend Failed",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2096,
-        272
+        -11904,
+        4512
       ],
       "onError": "continueRegularOutput"
     },
@@ -510,13 +510,13 @@
           }
         }
       },
-      "id": "c7314ff0-c167-42b3-bdec-ebd9a3622fb1",
+      "id": "8aa08f3b-0490-4040-b58f-b7b369e588c9",
       "name": "Publish Facebook Text",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3536,
-        672
+        -13344,
+        4912
       ],
       "credentials": {
         "facebookGraphApi": {
@@ -532,13 +532,13 @@
         "destinationFieldName": "attached_media",
         "options": {}
       },
-      "id": "7831b79a-c620-4d62-b575-511a50e4ffeb",
+      "id": "788cf168-bf03-48ce-8bf5-859c5cd6f500",
       "name": "Aggregate Facebook Photo IDs",
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -2672,
-        176
+        -12480,
+        4416
       ]
     },
     {
@@ -569,13 +569,13 @@
           }
         }
       },
-      "id": "1f8e6c67-933f-494c-8727-6c5fd779f7a0",
+      "id": "a9380f4f-f3db-4991-9845-95a4cddace71",
       "name": "Facebook Upload Photo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3232,
-        352
+        -13040,
+        4592
       ],
       "credentials": {
         "facebookGraphApi": {
@@ -609,26 +609,26 @@
         },
         "options": {}
       },
-      "id": "259ea5a2-510e-482d-9b58-43116f85caff",
+      "id": "b4242907-bf18-493f-aee4-924e97b7b942",
       "name": "Facebook Has Images",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3616,
-        368
+        -13424,
+        4608
       ]
     },
     {
       "parameters": {
         "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media.filter((item) => item?.url) : [];\nif (!media.length) return [{ json: { ...payload, image_count: 0, image_url: '' } }];\nreturn media.map((item, index) => ({ json: { ...payload, image_url: item.url, image_index: index, image_count: media.length } }));"
       },
-      "id": "263dc940-46a9-4a08-9fd3-cf80c7a6a639",
+      "id": "6ac4d9a1-79e8-47c6-9d46-908819d88b21",
       "name": "Prepare Facebook Images",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3856,
-        368
+        -13664,
+        4608
       ]
     },
     {
@@ -637,12 +637,12 @@
         "text": "={{ $('Chuẩn hóa dữ liệu publish').item.json.content }}",
         "additionalFields": {}
       },
-      "id": "801b59d5-1ae8-4935-8b2c-0fb9fb9e6036",
+      "id": "7b5c59f6-42f6-478b-b656-2db892854e66",
       "name": "Create a post  no image",
       "type": "n8n-nodes-base.linkedIn",
       "position": [
-        -3824,
-        32
+        -13632,
+        4272
       ],
       "typeVersion": 1,
       "credentials": {
@@ -660,12 +660,12 @@
         "shareMediaCategory": "=IMAGE",
         "additionalFields": {}
       },
-      "id": "68a2e832-4220-4191-ad23-5b8a62b7d255",
+      "id": "280816a2-ef04-44ff-8a84-622563b14b2c",
       "name": "Create a post with single image",
       "type": "n8n-nodes-base.linkedIn",
       "position": [
-        -2800,
-        -272
+        -12608,
+        3968
       ],
       "typeVersion": 1,
       "credentials": {
@@ -703,10 +703,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2096,
-        -400
+        -11904,
+        3840
       ],
-      "id": "4466017f-47ee-4a33-baa0-93a3b9c53682",
+      "id": "c2bd6173-7541-4538-978e-a1469df99a15",
       "name": "Initialize Upload",
       "alwaysOutputData": false,
       "credentials": {
@@ -726,10 +726,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2272,
-        -400
+        -12080,
+        3840
       ],
-      "id": "ee1bb9cc-0a96-4215-95b0-5fa41058ad0a",
+      "id": "2f61b8b7-a0ff-4fb6-858c-f4514bcb057d",
       "name": "Oauth get info Linkedin",
       "credentials": {
         "linkedInOAuth2Api": {
@@ -771,10 +771,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1440,
-        -608
+        -11248,
+        3632
       ],
-      "id": "0b077471-0b6b-4540-b0bf-0c8dc45128e0",
+      "id": "4151e43c-56c7-474e-87e5-a384810c3851",
       "name": "Create Multi-Image Post",
       "credentials": {
         "linkedInOAuth2Api": {
@@ -800,10 +800,10 @@
       "type": "n8n-nodes-base.aggregate",
       "typeVersion": 1,
       "position": [
-        -1664,
-        -608
+        -11472,
+        3632
       ],
-      "id": "f88f81c1-4a0b-491a-b399-8ca5b3ecfa7c",
+      "id": "e9c42754-191a-4c1e-82c5-d6a7acc19fb3",
       "name": "Aggregate"
     },
     {
@@ -814,10 +814,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1856,
-        -608
+        -11664,
+        3632
       ],
-      "id": "cfb3eec0-2f66-404f-93b4-654dc5444793",
+      "id": "62cff0c1-b72f-4e30-b8c6-be715356513a",
       "name": "Extract Image URN"
     },
     {
@@ -832,10 +832,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2048,
-        -608
+        -11856,
+        3632
       ],
-      "id": "e5baf708-dd72-4d84-972b-52bb73442288",
+      "id": "edc9296a-330f-4b09-85a5-826f41f968b3",
       "name": "Upload Binary"
     },
     {
@@ -847,10 +847,10 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -2288,
-        -608
+        -12096,
+        3632
       ],
-      "id": "02caae88-7d16-41b7-97ae-36289e7ee5eb",
+      "id": "4a77d058-7d91-4177-8e42-8ae5a6d1e13a",
       "name": "Merge"
     },
     {
@@ -864,12 +864,12 @@
           }
         }
       },
-      "id": "ccc271d1-7021-4aab-8734-d7a71f50af5e",
+      "id": "46439829-45f9-4f76-9aaa-3b620bdf43c1",
       "name": "Download Image",
       "type": "n8n-nodes-base.httpRequest",
       "position": [
-        -3360,
-        -416
+        -13168,
+        3824
       ],
       "typeVersion": 4.2,
       "onError": "continueErrorOutput"
@@ -901,10 +901,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -3008,
-        -608
+        -12816,
+        3632
       ],
-      "id": "4cbd98c7-eecd-46f3-8de8-47a7bbf70286",
+      "id": "174e4182-129c-46d0-8d04-1796fbc5d692",
       "name": "Check Multi Image"
     },
     {
@@ -914,10 +914,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3952,
-        -416
+        -13760,
+        3824
       ],
-      "id": "f0d05135-d5ad-4132-b499-f2cef48c12dd",
+      "id": "997a2cb3-aa47-480b-99d4-09cba5b9e56e",
       "name": "Parse Image URLs"
     },
     {
@@ -944,12 +944,12 @@
         },
         "options": {}
       },
-      "id": "f76becc0-2815-4803-a6a1-b8e4bccb70b3",
+      "id": "772f5885-e0f7-4a9b-ab98-a4b934a9faa2",
       "name": "Validate Image URL",
       "type": "n8n-nodes-base.if",
       "position": [
-        -4352,
-        528
+        -14160,
+        4768
       ],
       "typeVersion": 2.2
     },
@@ -958,12 +958,12 @@
         "mode": "runOnceForEachItem",
         "jsCode": "// Mode: Run Once for Each Item\n// Input: mỗi item đến từ \"Parse Image URLs\", đã có sẵn image_url, image_index, image_count\n\nlet imageUrl = $json.image_url;\n\n// Clean the URL\nimageUrl = imageUrl.trim();\n\n// Convert common sharing links to direct download links\n// Google Drive\nif (imageUrl.includes('drive.google.com/file/d/')) {\n  const fileIdMatch = imageUrl.match(/\\/d\\/([^\\/]+)/);\n  if (fileIdMatch) {\n    imageUrl = `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;\n  }\n}\n\n// Dropbox - change dl=0 to dl=1\nif (imageUrl.includes('dropbox.com') && imageUrl.includes('dl=0')) {\n  imageUrl = imageUrl.replace('dl=0', 'dl=1');\n}\n\n// Imgur - convert to direct image link\nif (imageUrl.includes('imgur.com/') && !imageUrl.includes('i.imgur.com')) {\n  imageUrl = imageUrl.replace('imgur.com/', 'i.imgur.com/') + '.jpg';\n}\n\n// OneDrive/SharePoint\nif (imageUrl.includes('sharepoint.com') || imageUrl.includes('1drv.ms')) {\n  imageUrl = imageUrl.split('?')[0] + '?download=1';\n}\n\nreturn {\n  json: {\n    original_url: $json.image_url,\n    direct_download_url: imageUrl,\n    image_index: $json.image_index,\n    image_count: $json.image_count\n  }\n};"
       },
-      "id": "c5f8ff5b-0bf9-4dc0-93ba-8c6db29e95f8",
+      "id": "607ecba3-7c90-478c-9761-8a978af9bf7f",
       "name": "Convert Share Link to Download Link",
       "type": "n8n-nodes-base.code",
       "position": [
-        -3648,
-        -416
+        -13456,
+        3824
       ],
       "typeVersion": 2
     },
@@ -972,13 +972,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nconst platform = String(body.platform || '').trim().toLowerCase();\nif (!['facebook', 'linkedin', 'youtube'].includes(platform)) throw new Error('Unsupported platform');\nconst postType = String(body.postType || 'post').trim().toLowerCase();\nconst content = String(body.content || body.description || body.title || '').trim();\nif (!content) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\n\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  url = url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n  const driveMatch = url.match(/drive\\.google\\.com\\/file\\/d\\/([A-Za-z0-9_-]+)/) || url.match(/[?&]id=([A-Za-z0-9_-]+)/);\n  if (driveMatch && url.includes('drive.google.com')) {\n    url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  }\n  return url;\n};\n\nconst rawMedia = Array.isArray(body.media) ? body.media : (Array.isArray(body.mediaUrls) ? body.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\n\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform, postType, content, title: String(body.title || '').trim(), description: String(body.description || '').trim(), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
       },
-      "id": "7cd19055-12a0-4e85-b826-6d92e34f1d79",
+      "id": "204714ac-1e1c-4f19-b000-350d7f1a6064",
       "name": "Chuẩn hóa dữ liệu publish",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5104,
-        672
+        -14912,
+        4912
       ]
     },
     {
@@ -988,13 +988,13 @@
         "authentication": "headerAuth",
         "options": {}
       },
-      "id": "51a3f151-e796-41f2-aa5d-5ee49022f0e4",
+      "id": "8011ed1f-edd2-4e3e-bb92-612a00251fb8",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -5376,
-        672
+        -15184,
+        4912
       ],
       "webhookId": "e1ac52bc-486e-4528-9a60-b9d4df187790",
       "credentials": {
@@ -1008,13 +1008,13 @@
       "parameters": {
         "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media : [];\nconst video = media.find((item) => String(item?.mimeType || '').startsWith('video/')) || media.find((item) => item?.videoUrl || /video/i.test(String(item?.fileName || '')));\nif (!video?.url) throw new Error('Missing YouTube video URL');\nreturn { json: { ...payload, video_url: video.url, youtube_title: String(payload.title || 'EPCB Video').slice(0, 100), youtube_description: payload.description || payload.content } };"
       },
-      "id": "ec0419e7-881a-4a51-b4e5-bcb1ed949ab1",
+      "id": "18ca9894-6e86-48c9-9dd4-64259ed0e470",
       "name": "Prepare YouTube Video",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4272,
-        1856
+        -14080,
+        6096
       ],
       "onError": "continueErrorOutput"
     },
@@ -1029,13 +1029,13 @@
           }
         }
       },
-      "id": "62cdf291-7e70-49a7-9ba0-5e3f210e67e8",
+      "id": "10400c20-6199-4438-a716-f8ebe943dbc7",
       "name": "Download YouTube Video",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3968,
-        1840
+        -13776,
+        6080
       ],
       "onError": "continueErrorOutput"
     },
@@ -1045,7 +1045,7 @@
         "operation": "upload",
         "title": "={{ $('Prepare YouTube Video').item.json.youtube_title }}",
         "regionCode": "VN",
-        "categoryId": "22",
+        "categoryId": "28",
         "binaryProperty": "=data",
         "options": {
           "description": "={{ $('Prepare YouTube Video').item.json.youtube_description }}",
@@ -1053,16 +1053,17 @@
           "privacyStatus": "public"
         }
       },
-      "id": "fed44b38-e5fb-4124-9253-c0b60e1ae14e",
+      "id": "ba64a57d-f3c6-4164-b17e-9bbc8e62d83f",
       "name": "Upload YouTube Video",
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        -3680,
-        1824
+        -13488,
+        6064
       ],
       "credentials": {
         "youTubeOAuth2Api": {
+          "id": "zR2Lgx8BRlBwU8X4",
           "name": "YouTube account"
         }
       },
@@ -1071,7 +1072,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1086,20 +1087,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'published', externalPostId: $json.id || $json.videoId || $json.uploadId || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "e704156a-c626-4c35-8562-efa30b1008c9",
+      "id": "1421c690-a06c-4873-866a-c5a1d8b046e3",
       "name": "Callback Backend Published YouTube",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3264,
-        1696
+        -13072,
+        5936
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1114,13 +1115,13 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "a25d5fb1-5bf9-4d6c-9ee0-bd8047a7f93c",
+      "id": "9024e76a-06ab-4bfe-b12c-ce3d36a3b6b8",
       "name": "Callback Backend Failed YouTube",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3376,
-        2128
+        -13184,
+        6368
       ],
       "onError": "continueRegularOutput"
     },
@@ -1128,13 +1129,13 @@
       "parameters": {
         "jsCode": "const payload = $json;\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  const driveMatch = url.match(new RegExp('(?:/d/|[?&]id=)([A-Za-z0-9_-]+)'));\n  if (driveMatch && url.includes('drive.google.com')) url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  return url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n};\nconst rawMedia = Array.isArray(payload.media) ? payload.media : (Array.isArray(payload.mediaUrls) ? payload.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\nreturn [{ json: { ...payload, media, mediaUrls: media.map((item) => item.url) } }];"
       },
-      "id": "eb48af67-0852-4dcd-95c5-41cc7036ce5e",
+      "id": "03d49bf3-b7d6-4435-958f-7328a01d77b4",
       "name": "Chuẩn hóa URL media Drive",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4800,
-        688
+        -14608,
+        4928
       ]
     },
     {
@@ -1164,23 +1165,23 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -4224,
-        752
+        -14032,
+        4992
       ],
-      "id": "b0af5673-b861-4721-9485-247fb2ef1c41",
+      "id": "297c51c8-61d2-48a5-a045-6ecd2294a720",
       "name": "If check Post Type"
     },
     {
       "parameters": {
         "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media : [];\nconst video = media.find((item) => String(item?.mimeType || '').startsWith('video/')) || media.find((item) => item?.videoUrl || /video/i.test(String(item?.fileName || '')));\nif (!video?.url) throw new Error('Missing Facebook Reel video URL');\nreturn { json: { ...payload, video_url: video.url, reel_title: String(payload.title || '').slice(0, 100), reel_description: payload.description || payload.content } };"
       },
-      "id": "31b25901-6e40-493b-a1b6-8382b0b7ee34",
+      "id": "c350b3c6-ebf6-41cb-8066-4d0bb37e266c",
       "name": "Prepare Facebook Reel",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3936,
-        1392
+        -13744,
+        5632
       ],
       "onError": "continueErrorOutput"
     },
@@ -1195,13 +1196,13 @@
           }
         }
       },
-      "id": "47bd3255-b3db-4408-828a-3c2d17e4f499",
+      "id": "6facd68f-7ac6-4fcd-8269-13fcaae128a1",
       "name": "Download Facebook Reel Video",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3664,
-        976
+        -13472,
+        5216
       ],
       "onError": "continueErrorOutput"
     },
@@ -1222,13 +1223,13 @@
           }
         }
       },
-      "id": "5c49fb5a-8334-41fa-83ae-da30149cb4da",
+      "id": "36ce4a89-cc0a-4bf5-91d5-b18013b21f3e",
       "name": "Facebook Reel Start Upload",
       "type": "n8n-nodes-base.facebookGraphApi",
       "typeVersion": 1,
       "position": [
-        -3552,
-        1376
+        -13360,
+        5616
       ],
       "credentials": {
         "facebookGraphApi": {
@@ -1244,13 +1245,13 @@
         "combineBy": "combineByPosition",
         "options": {}
       },
-      "id": "1ddfca68-f76e-4b52-8d96-f52582b7b423",
+      "id": "48d291d6-da0f-4590-8ed6-5ec79106519d",
       "name": "Merge Facebook Reel Video And Session",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        -3104,
-        976
+        -12912,
+        5216
       ]
     },
     {
@@ -1258,13 +1259,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "const source = $binary?.data;\nif (!source) throw new Error('Facebook Reel upload requires binary data field data');\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nif (!buffer?.length) throw new Error('Facebook Reel video binary is empty');\nconst binary = await this.helpers.prepareBinaryData(buffer, source.fileName || 'facebook-reel.mp4', source.mimeType || 'video/mp4');\nreturn { json: { ...$json, reel_file_size: buffer.length }, binary: { data: binary } };"
       },
-      "id": "f1e70fb2-7c28-4d6a-9e15-3b0c8a52d4f1",
+      "id": "8aea75d0-d576-4151-bde5-5f854251ce2d",
       "name": "Chuẩn bị binary Facebook Reel",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2992,
-        976
+        -12640,
+        5216
       ]
     },
     {
@@ -1295,13 +1296,13 @@
         "inputDataFieldName": "data",
         "options": {}
       },
-      "id": "caad593b-ff4a-41bf-9ebe-d4e93556526e",
+      "id": "ff0b74ee-1941-4d50-9346-1fc5bdfc3378",
       "name": "Facebook Reel Upload Binary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2864,
-        976
+        -12416,
+        5216
       ],
       "credentials": {
         "facebookGraphApi": {
@@ -1344,13 +1345,13 @@
           }
         }
       },
-      "id": "4728a89b-40e8-4edd-983d-7b0acd52bcf8",
+      "id": "9ac6bb94-ffcb-4ffa-9ff2-07763ffbdd07",
       "name": "Facebook Reel Finish Publish",
       "type": "n8n-nodes-base.facebookGraphApi",
       "typeVersion": 1,
       "position": [
-        -2512,
-        960
+        -12048,
+        5200
       ],
       "credentials": {
         "facebookGraphApi": {
@@ -1363,7 +1364,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1378,20 +1379,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'published', externalPostId: $('Facebook Reel Start Upload').first().json.video_id || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "899b0936-bbf8-4010-9707-d0ed20017ccb",
+      "id": "5792091d-030e-4417-88cf-e029909d8e41",
       "name": "Callback Backend Published Facebook Reel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2240,
-        848
+        -11776,
+        5088
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1406,20 +1407,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "8a64232e-0d11-4244-9844-89b5c32dba90",
+      "id": "4c94a6d2-14c8-4dcb-97d8-29f96e8cc163",
       "name": "Callback Backend Failed Download Facebook Reel Video",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3504,
-        1104
+        -13312,
+        5344
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1434,20 +1435,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "7190ccb2-93d1-44f0-9663-f7d8784b773d",
+      "id": "36f75ed0-f2a9-42d1-a926-0edc08be6771",
       "name": "Callback Backend Failed Facebook Reel Start Upload",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3312,
-        1472
+        -13120,
+        5712
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1462,20 +1463,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "8393a8d2-12fc-452f-85b1-a69aa1bf0b12",
+      "id": "1099e0b9-97d6-4dac-9d44-bb6db2934990",
       "name": "Callback Backend Failed Facebook Reel Upload Binary",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2624,
-        1152
+        -12160,
+        5392
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1490,20 +1491,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'facebook', status: 'failed', errorMessage: $json.error?.message || $json.message || 'Facebook Reel publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "13930edf-027d-43b8-817e-0d5311ed8dda",
+      "id": "f2e9cc01-89ce-4979-ab23-7f7cc7c818a4",
       "name": "Callback Backend Failed Facebook Reel Finish Publish",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2240,
-        1104
+        -11776,
+        5344
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1518,20 +1519,20 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "5668191b-f1f2-4482-89a4-bea040afb17f",
+      "id": "21098192-e973-4fc6-9620-ce028076a0c5",
       "name": "Callback Backend Failed Download YouTube Video",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3792,
-        2064
+        -13600,
+        6304
       ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://4110-14-224-216-170.ngrok-free.app/api/publish/callback",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1546,13 +1547,13 @@
         "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
         "options": {}
       },
-      "id": "93513a87-3a00-4b05-a89c-7e28e9ba6c45",
+      "id": "2cd51986-4c1c-46d3-a6a7-da1a86259751",
       "name": "Callback Backend Failed Prepare YouTube Video",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4064,
-        2080
+        -13872,
+        6320
       ],
       "onError": "continueRegularOutput"
     }
@@ -2007,8 +2008,7 @@
             "type": "main",
             "index": 0
           }
-        ],
-        []
+        ]
       ]
     },
     "Download Facebook Reel Video": {
@@ -2114,7 +2114,7 @@
           "content-type": "application/json",
           "x-publish-key": "epcb-publish-secret-2026",
           "user-agent": "n8n",
-          "content-length": "1750",
+          "content-length": "528",
           "accept-encoding": "gzip, compress, deflate, br",
           "host": "n8n.epcb2.espitek.com",
           "x-forwarded-proto": "https",
@@ -2126,25 +2126,25 @@
         "params": {},
         "query": {},
         "body": {
-          "postId": "ba6e6121-669b-4ea0-9687-70937d88fb0b",
-          "scheduledAt": "2026-09-15T03:50:00.000Z",
+          "postId": "cc44521e-5d2a-4d1b-a172-ccb74e6eddfc",
+          "scheduledAt": "2026-09-15T07:44:00.000Z",
           "platform": "facebook",
           "postType": "facebook_reel",
-          "content": "Mèo nhảy vui vẻ! Đón xem chú mèo hoạt hình cực kỳ dễ thương này nhé! Được sản xuất bởi AI, mèo này không chỉ đẹp mà còn mang đến nhiều tiếng cười cho bạn! Nhớ theo dõi và chia sẻ video này với bạn bè nào!",
-          "title": "Mèo nhảy vui vẻ - Hoạt Hình Dễ Thương",
-          "description": "Khám phá chú mèo hoạt hình vui nhộn được sản xuất bởi AI! Hãy thưởng thức những khoảnh khắc vui vẻ và đầy sáng tạo mà chú mèo này mang lại! #Mèo #HoạtHình #AI #VuiVẻ",
-          "employee": "Đath test",
+          "content": "Dev test 123123123",
+          "title": "",
+          "description": "",
+          "employee": "Ddaht",
           "note": "",
           "media": [
             {
-              "fileId": "c5981f72-8347-46c9-a8e2-7aa146607d86",
+              "fileId": "314b2e28-2d27-443a-a171-b670836448e5",
               "fileName": "google-drive-video",
-              "url": "[https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79\\_7Zg](https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79_7Zg)",
+              "url": "https://drive.google.com/uc?export=download&id=1KB8D5jYdXa_vRrutYol1n07QzPcPX1WL",
               "mimeType": "video/mp4"
             }
           ],
           "mediaUrls": [
-            "[https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79\\_7Zg](https://drive.google.com/uc?export=download&id=1kgVbvyDK9zsoneGyWi-Ntd13-o79_7Zg)"
+            "https://drive.google.com/uc?export=download&id=1KB8D5jYdXa_vRrutYol1n07QzPcPX1WL"
           ]
         },
         "webhookUrl": "https://n8n.epcb2.espitek.com/webhook/content-manager/publish-event",

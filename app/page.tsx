@@ -221,7 +221,11 @@ export default function Home() {
 
   return (
     <div className="shell">
-      <SidebarPro view={view} setView={setView} />
+      <SidebarPro
+        view={view}
+        setView={setView}
+        failedCount={counts.failed}
+      />
       <main className="main">
         <header className="topbar">
           <div className="heading-block">
@@ -384,9 +388,11 @@ function Sidebar({
 function SidebarPro({
   view,
   setView,
+  failedCount,
 }: {
   view: View;
   setView: (view: View) => void;
+  failedCount: number;
 }) {
   const items: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
@@ -417,7 +423,9 @@ function SidebarPro({
           >
             <Icon size={17} strokeWidth={1.8} />
             {label}
-            {id === "failed" && <span className="nav-count">1</span>}
+            {id === "failed" && failedCount > 0 && (
+              <span className="nav-count">{failedCount}</span>
+            )}
           </button>
         ))}
       </nav>
