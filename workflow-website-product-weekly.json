@@ -1,0 +1,348 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 19 * * *"
+            }
+          ]
+        }
+      },
+      "id": "7cf9ae16-42e7-4602-ad07-17cf5bc5b363",
+      "name": "Tạo draft mỗi tuần",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    backendBaseUrl: 'https://content.epcb2.espitek.com',\n    apiKey: '2ce3e492f751281be113952bea6ea028bcbf2a2f3e9c94bc',\n  },\n}];"
+      },
+      "id": "aaba7477-2cb9-47b8-ba19-5c7c89d77c35",
+      "name": "Config - thay backend và key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config - thay backend và key').first().json.backendBaseUrl + '/api/catalog/products/reserve' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "={{ $('Config - thay backend và key').first().json.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "11a5e603-4ee9-405d-be45-c2553c3c3354",
+      "name": "Reserve sản phẩm chưa đăng",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json.data || {}; const product = data.product || {}; const publication = data.publication || {}; const imageUrls = Array.isArray(publication.selectedImageUrls) ? publication.selectedImageUrls.filter(Boolean).slice(0, 3) : (publication.selectedImageUrl ? [publication.selectedImageUrl] : (Array.isArray(product.images) ? product.images.map((image) => image.url || image.imageUrl).filter(Boolean).slice(0, 3) : [])); return [{ json: { publicationId: publication.id, productId: product.id, productName: product.productName || '', description: product.description || '', specifications: product.specifications || '', category: product.category || '', sourceUrl: product.canonicalUrl || product.sourceUrl || '', imageUrls } }];"
+      },
+      "id": "ed8db2ee-803a-4541-8e2b-94f0a75b2fec",
+      "name": "Chuẩn bị dữ liệu cho AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Tạo nội dung theo đúng schema của Structured Output Parser từ dữ liệu sản phẩm sau. Tên sản phẩm: ' + $json.productName + '. Mô tả: ' + ($json.description || '(không có)') + '. Thông số: ' + ($json.specifications || '(không có)') + '. Danh mục: ' + ($json.category || '(không có)') + '. URL nguồn bắt buộc đưa vào cuối mỗi bài nếu có: ' + ($json.sourceUrl || '(không có)') + '. Sản phẩm có ' + ($json.imageUrls || []).length + ' ảnh sẽ được đăng cùng bài: ' + JSON.stringify($json.imageUrls || []) + '. Không cần mô tả ảnh.' }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Bạn là biên tập viên nội dung của EPCB. Chỉ sử dụng dữ liệu sản phẩm được cung cấp, không bịa thông số, giá, chứng nhận, khách hàng hoặc công dụng không có trong dữ liệu. Hãy tạo đúng một JSON object duy nhất theo schema của Structured Output Parser, gồm đúng hai khóa facebook và linkedin. Không trả markdown, không dùng code fence, không thêm khóa output, không trả mảng, không giải thích bên ngoài JSON. Facebook: 60-120 từ. LinkedIn: 80-160 từ. Mỗi kênh có 3-5 hashtag, CTA và character_count là số. Không dùng ký tự em dash."
+        }
+      },
+      "id": "e9eec218-ec58-46b9-b5e0-659b72f47bd4",
+      "name": "AI tạo draft Facebook LinkedIn",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "options": {
+          "maxTokens": 2000,
+          "temperature": 0.2
+        }
+      },
+      "id": "d8ccf2c4-9160-4ef9-9e13-9ccf0171c7c5",
+      "name": "OpenAI Chat Model sản phẩm",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        208
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9MHUX2e2dWl9LzNK",
+          "name": "OpenAI account datvct"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"facebook\": {\n    \"post_content\": \"Nội dung Facebook...\",\n    \"hashtags\": [\"#EPCB\", \"#CongNghe\", \"#IoT\"],\n    \"call_to_action\": \"Xem thêm thông tin sản phẩm nhé.\",\n    \"character_count\": 180\n  },\n  \"linkedin\": {\n    \"post_content\": \"Nội dung LinkedIn...\",\n    \"hashtags\": [\"#EPCB\", \"#IndustrialIoT\", \"#Automation\"],\n    \"call_to_action\": \"Tìm hiểu thêm về giải pháp.\",\n    \"character_count\": 220\n  }\n}"
+      },
+      "id": "b6d4a2ae-05bb-40b0-a2cc-28389d9e4fc1",
+      "name": "Structured Output Parser sản phẩm",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1024,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Chuẩn bị dữ liệu cho AI').first().json;\nconst ai = $json || {};\n\nconst readText = (value) => {\n  if (typeof value === 'string') return value;\n  if (!value || typeof value !== 'object') return '';\n  return String(value.post_content || value.content || value.text || value.body || '').trim();\n};\n\nconst readOutput = (value) => {\n  if (value && typeof value === 'object' && !Array.isArray(value)) return value;\n  if (Array.isArray(value)) {\n    return value\n      .flatMap((message) => Array.isArray(message?.content) ? message.content : [message])\n      .map((part) => part?.text || part?.output_text || '')\n      .filter(Boolean)\n      .join('\\n');\n  }\n  return String(value || '');\n};\n\nlet raw = readOutput(ai.output || ai.output_text || ai.response || ai.text);\nif (typeof raw === 'string') {\n  raw = raw\n    .replace(/^```json\\s*/i, '')\n    .replace(/^```\\s*/i, '')\n    .replace(/\\s*```$/i, '')\n    .trim();\n}\n\nlet parsed = raw && typeof raw === 'object' ? raw : null;\nif (!parsed && typeof raw === 'string') {\n  try {\n    parsed = JSON.parse(raw);\n  } catch {\n    const match = raw.match(/\\{[\\s\\S]*\\}/);\n    if (match) {\n      try { parsed = JSON.parse(match[0]); } catch {}\n    }\n  }\n}\n\nif (!parsed || typeof parsed !== 'object') {\n  throw new Error('AI trả về JSON không hợp lệ');\n}\n\nconst cleanHashtag = (value) => {\n  const text = String(value || '').trim().replace(/^#+/, '').replace(/[^\\p{L}\\p{N}_-]+/gu, '');\n  return text ? `#${text}` : '';\n};\n\nconst getHashtags = (channel, content) => {\n  const values = Array.isArray(channel?.hashtags) ? channel.hashtags : [];\n  const embedded = String(content || '').match(/#[\\p{L}\\p{N}_-]+/gu) || [];\n  return [...new Set([...values, ...embedded].map(cleanHashtag).filter(Boolean))];\n};\n\nconst fallbackHashtags = (channel, content) => {\n  const hashtags = getHashtags(channel, content);\n  const categoryTag = cleanHashtag(input.category);\n  const productTag = cleanHashtag(String(input.productName || '').split(/\\s+/).slice(0, 2).join(''));\n  for (const tag of ['#EPCB', categoryTag, productTag]) {\n    if (tag && !hashtags.includes(tag)) hashtags.push(tag);\n  }\n  return hashtags.slice(0, 5);\n};\n\nconst formatChannel = (name, limit) => {\n  const channel = parsed[name];\n  let content = readText(channel);\n  if (!content) throw new Error(`AI chưa tạo nội dung ${name}`);\n\n  const hashtags = fallbackHashtags(channel, content);\n  if (hashtags.length < 3) throw new Error(`Nội dung ${name} cần ít nhất 3 hashtag`);\n\n  const callToAction = typeof channel === 'object' ? String(channel.call_to_action || channel.callToAction || '').trim() : '';\n  if (callToAction && !content.toLowerCase().includes(callToAction.toLowerCase())) {\n    content = `${content}\\n\\n${callToAction}`;\n  }\n  if (input.sourceUrl && !content.includes(input.sourceUrl)) {\n    content = `${content}\\n\\nXem thêm: ${input.sourceUrl}`;\n  }\n\n  const hashtagString = hashtags.join(' ');\n  if (!hashtags.every((tag) => content.includes(tag))) {\n    content = `${content}\\n\\n${hashtagString}`;\n  }\n\n  const characterCount = content.length;\n  if (characterCount > limit) {\n    throw new Error(`Nội dung ${name} vượt giới hạn ${limit} ký tự (${characterCount})`);\n  }\n\n  return {\n    content: content.trim(),\n    hashtags,\n    characterCount,\n    callToAction,\n  };\n};\n\nconst facebook = formatChannel('facebook', 2000);\nconst linkedin = formatChannel('linkedin', 3000);\n\nreturn [{\n  json: {\n    publicationId: input.publicationId,\n    facebookContent: facebook.content,\n    linkedinContent: linkedin.content,\n    quality: {\n      facebook: { characterCount: facebook.characterCount, hashtagCount: facebook.hashtags.length },\n      linkedin: { characterCount: linkedin.characterCount, hashtagCount: linkedin.hashtags.length },\n      checkedAt: new Date().toISOString(),\n    },\n  },\n}];"
+      },
+      "id": "a86aad54-f9ea-4a11-85ba-f1c95e86f01d",
+        "name": "Định dạng và kiểm tra content AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        16
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config - thay backend và key').first().json.backendBaseUrl + '/api/catalog/drafts' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "={{ $('Config - thay backend và key').first().json.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ publicationId: $json.publicationId, facebookContent: $json.facebookContent, linkedinContent: $json.linkedinContent }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "134b273e-85ea-4432-9636-704ec219aaf1",
+      "name": "Lưu bài nháp vào Content Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        16
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $('Config - thay backend và key').first().json.backendBaseUrl + '/api/catalog/publications/' + $('Reserve sản phẩm chưa đăng').first().json.data.publication.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "={{ $('Config - thay backend và key').first().json.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'failed' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "ff1cb41c-79ca-4baa-b1c5-f5e4f3f3ccd7",
+      "name": "Đánh dấu reservation lỗi",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1680,
+        256
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Tạo draft mỗi tuần": {
+      "main": [
+        [
+          {
+            "node": "Config - thay backend và key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config - thay backend và key": {
+      "main": [
+        [
+          {
+            "node": "Reserve sản phẩm chưa đăng",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reserve sản phẩm chưa đăng": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị dữ liệu cho AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị dữ liệu cho AI": {
+      "main": [
+        [
+          {
+            "node": "AI tạo draft Facebook LinkedIn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model sản phẩm": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI tạo draft Facebook LinkedIn",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser sản phẩm": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI tạo draft Facebook LinkedIn",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI tạo draft Facebook LinkedIn": {
+      "main": [
+        [
+          {
+            "node": "Định dạng và kiểm tra content AI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Đánh dấu reservation lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Định dạng và kiểm tra content AI": {
+      "main": [
+        [
+          {
+            "node": "Lưu bài nháp vào Content Manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Đánh dấu reservation lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lưu bài nháp vào Content Manager": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Đánh dấu reservation lỗi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  },
+  "settings": {
+    "timezone": "Asia/Ho_Chi_Minh"
+  }
+}

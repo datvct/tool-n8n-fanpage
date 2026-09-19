@@ -1,0 +1,215 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "* * * * *"
+            }
+          ]
+        }
+      },
+      "id": "4de5928f-19a4-42c8-9e89-c5aa3fd0cc08",
+      "name": "Crawl mỗi ngày",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2880,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      sitemapUrl: \"https://epcb.vn/sitemap_collections_1.xml\",\n      collectionUrl: \"https://epcb.vn/collections/make-by-epcb\",\n      productPathPrefix: \"https://epcb.vn/products/\",\n      backendBaseUrl: \"https://content.epcb2.espitek.com\",\n      apiKey: \"2ce3e492f751281be113952bea6ea028bcbf2a2f3e9c94bc\",\n    },\n  },\n];"
+      },
+      "id": "7fb70d19-7899-442f-bd2c-d939ec0867a6",
+      "name": "Config - thay domain và key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2640,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Config - thay domain và key').first().json.collectionUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "475a6d74-6a64-4c54-a029-afaaa971360f",
+      "name": "Tải trang danh mục",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2400,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawValue = $json.data ?? $json.body ?? \"\";\nconst html =\n  typeof rawValue === \"string\" ? rawValue : JSON.stringify(rawValue);\n\nconst config = $(\"Config - thay domain và key\").first().json;\nconst collectionUrl = String(config.collectionUrl || \"\").trim();\nconst productPathPrefix = String(config.productPathPrefix || \"\").trim();\n\nif (!collectionUrl || !productPathPrefix) {\n  throw new Error(\n    \"Thiếu collectionUrl hoặc productPathPrefix trong node cấu hình.\",\n  );\n}\n\nconst decodeHtml = (value) =>\n  String(value || \"\")\n    .replace(/\\\\/g, \"/\")\n    .replace(/&amp;/gi, \"&\")\n    .replace(/&quot;/gi, '\"')\n    .replace(/&#39;|&apos;/gi, \"'\")\n    .replace(/&lt;/gi, \"<\")\n    .replace(/&gt;/gi, \">\");\n\nconst parseHttpUrl = (value, fallbackOrigin) => {\n  let raw = decodeHtml(value).trim();\n\n  if (raw.startsWith(\"//\")) raw = \"https:\" + raw;\n  if (!/^https?:\\/\\//i.test(raw)) {\n    if (!fallbackOrigin) return null;\n    raw = raw.startsWith(\"/\")\n      ? fallbackOrigin + raw\n      : fallbackOrigin + \"/\" + raw;\n  }\n\n  const match = raw.match(\n    /^(https?):\\/\\/([^/?#]+)(\\/[^?#]*)?(?:[?#].*)?$/i,\n  );\n  if (!match) return null;\n\n  const origin =\n    match[1].toLowerCase() + \"://\" + match[2].toLowerCase();\n  const pathname = (match[3] || \"/\").replace(/\\/{2,}/g, \"/\");\n\n  return {\n    origin,\n    pathname,\n    href: origin + pathname,\n  };\n};\n\nconst collection = parseHttpUrl(collectionUrl);\nconst productPrefix = parseHttpUrl(\n  productPathPrefix,\n  collection?.origin,\n);\n\nif (!collection || !productPrefix) {\n  throw new Error(\n    \"collectionUrl hoặc productPathPrefix không hợp lệ.\",\n  );\n}\n\nconst allowedOrigin = productPrefix.origin;\nconst allowedPath = productPrefix.pathname.endsWith(\"/\")\n  ? productPrefix.pathname\n  : productPrefix.pathname + \"/\";\n\nconst candidates = [];\n\nconst collectMatches = (regex) => {\n  for (const match of html.matchAll(regex)) {\n    if (match[1]) candidates.push(decodeHtml(match[1]).trim());\n  }\n};\n\ncollectMatches(/href\\s*=\\s*[\"']([^\"']+)[\"']/gi);\ncollectMatches(/href\\s*=\\s*([^\\s>]+)/gi);\ncollectMatches(/(?:[\"']|\\x22)([^\"'<>\\s]*\\/products\\/[^\"'<>\\s?#]*)/gi);\n\nconst productUrls = [];\n\nfor (const candidate of candidates) {\n  const productUrl = parseHttpUrl(candidate, collection.origin);\n\n  if (\n    productUrl &&\n    productUrl.origin === allowedOrigin &&\n    productUrl.pathname.startsWith(allowedPath) &&\n    productUrl.pathname.slice(allowedPath.length).trim() !== \"\"\n  ) {\n    productUrls.push(productUrl.href.replace(/\\/$/, \"\"));\n  }\n}\n\nconst uniqueUrls = [...new Set(productUrls)];\n\nif (!uniqueUrls.length) {\n  throw new Error(\n    \"Không tìm thấy link sản phẩm. htmlLength=\" +\n      html.length +\n      \", collectionUrl=\" +\n      collectionUrl +\n      \", productPathPrefix=\" +\n      productPathPrefix,\n  );\n}\n\nreturn uniqueUrls.map((productUrl) => ({\n  json: {\n    product_url: productUrl,\n  },\n}));"
+      },
+      "id": "3192984b-ee8c-4dfc-b68a-5ecf323c11f3",
+      "name": "Lấy URL sản phẩm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2160,
+        2560
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.product_url.endsWith('/') ? $json.product_url.slice(0, -1) + '.js' : $json.product_url + '.js' }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "c80b2004-2059-4ca0-bd13-47d0cdcf9ba2",
+      "name": "Tải trang sản phẩm",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1920,
+        2560
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceUrl = String(\n  $(\"Lấy URL sản phẩm\").item.json.product_url ||\n    $json.product_url ||\n    \"\",\n).trim();\n\nconst rawProduct = $json.data ?? $json.body ?? $json;\nlet product = rawProduct;\n\nif (typeof rawProduct === \"string\") {\n  try {\n    product = JSON.parse(rawProduct);\n  } catch {\n    throw new Error(\"Shopify Product JSON không hợp lệ: \" + sourceUrl);\n  }\n}\n\nconst decode = (value) =>\n  String(value || \"\")\n    .replace(/&amp;/g, \"&\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;|&apos;/g, \"'\")\n    .replace(/&lt;/g, \"<\")\n    .replace(/&gt;/g, \">\")\n    .trim();\n\nconst strip = (value) =>\n  decode(String(value || \"\").replace(/<[^>]+>/g, \" \").replace(/\\s+/g, \" \"));\n\nconst resolveHttpUrl = (value) => {\n  let raw = decode(value);\n\n  if (!raw) return \"\";\n  if (raw.startsWith(\"//\")) return \"https:\" + raw;\n  return /^https?:\\/\\//i.test(raw) ? raw : \"\";\n};\n\nconst title = strip(product.title || product.pagetitle || sourceUrl);\nconst description = strip(\n  product.description || product.content || product.metadescription || \"\",\n);\n\nconst imageValues = [];\n\nconst addImages = (value) => {\n  if (Array.isArray(value)) {\n    value.forEach(addImages);\n    return;\n  }\n\n  if (typeof value === \"string\") {\n    imageValues.push(resolveHttpUrl(value));\n    return;\n  }\n\n  if (value && typeof value === \"object\") {\n    addImages(\n      value.src ||\n        value.url ||\n        value.featured_image ||\n        value.preview_image?.src ||\n        value.preview_image?.url,\n    );\n  }\n};\n\naddImages(product.images);\naddImages(product.featured_image);\naddImages(product.media);\n\nconst images = [\n  ...new Set(imageValues.filter((url) => /^https?:\\/\\//i.test(url))),\n]\n  .slice(0, 30)\n  .map((url, index) => ({\n    url,\n    alt: title,\n    sortOrder: index,\n  }));\n\nconst specificationParts = [\n  product.vendor ? \"Thương hiệu: \" + strip(product.vendor) : \"\",\n  product.type ? \"Loại: \" + strip(product.type) : \"\",\n  Array.isArray(product.tags) && product.tags.length\n    ? \"Tags: \" + product.tags.map(strip).join(\", \")\n    : \"\",\n  Array.isArray(product.options) && product.options.length\n    ? product.options\n        .map((option) => {\n          const values = Array.isArray(option.values)\n            ? option.values.join(\", \")\n            : option.values || \"\";\n          return option.name ? option.name + \": \" + values : \"\";\n        })\n        .filter(Boolean)\n        .join(\"\\n\")\n    : \"\",\n]\n  .filter(Boolean)\n  .join(\"\\n\");\n\nreturn {\n  json: {\n    sourceUrl,\n    canonicalUrl: sourceUrl,\n    productName: title.slice(0, 300),\n    description: description.slice(0, 10000),\n    specifications: specificationParts.slice(0, 10000),\n    category: strip(product.type || \"\"),\n    images,\n  },\n};",
+        "mode": "runOnceForEachItem"
+      },
+      "id": "323f202e-2ec8-4b6d-824a-cc4261a64d8b",
+      "name": "Chuẩn hóa sản phẩm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        2560
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config - thay domain và key').first().json.backendBaseUrl + '/api/catalog/products/upsert' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "={{ $('Config - thay domain và key').first().json.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "70f34341-6660-4dcb-9d86-93d52cd92c03",
+      "name": "Lưu catalog vào Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1440,
+        2560
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Crawl mỗi ngày": {
+      "main": [
+        [
+          {
+            "node": "Config - thay domain và key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config - thay domain và key": {
+      "main": [
+        [
+          {
+            "node": "Tải trang danh mục",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tải trang danh mục": {
+      "main": [
+        [
+          {
+            "node": "Lấy URL sản phẩm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lấy URL sản phẩm": {
+      "main": [
+        [
+          {
+            "node": "Tải trang sản phẩm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tải trang sản phẩm": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn hóa sản phẩm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn hóa sản phẩm": {
+      "main": [
+        [
+          {
+            "node": "Lưu catalog vào Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  }
+}

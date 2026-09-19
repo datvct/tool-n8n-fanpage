@@ -6,6 +6,9 @@ const publicPaths = [
   "/api/auth/login",
   "/api/contents/import",
   "/api/publish/callback",
+  "/api/catalog/products",
+  "/api/catalog/drafts",
+  "/api/catalog/publications",
 ];
 
 export async function proxy(request: NextRequest) {

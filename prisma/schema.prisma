@@ -151,3 +151,56 @@ model PublishLog {
   @@index([socialPostId])
   @@map("publish_logs")
 }
+
+model WebsiteProduct {
+  id             String                @id @default(uuid()) @db.Uuid
+  sourceUrl      String                @map("source_url") @db.Text
+  canonicalUrl   String                @map("canonical_url") @db.Text
+  productName    String                @map("product_name") @db.Text
+  description    String                @db.Text
+  specifications String?               @db.Text
+  category       String?
+  contentHash    String                @map("content_hash") @db.Text
+  isActive       Boolean               @default(true) @map("is_active")
+  crawledAt      DateTime              @default(now()) @map("crawled_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime?             @map("updated_at")
+  images         WebsiteProductImage[]
+  publications   WebsiteProductPublication[]
+
+  @@index([canonicalUrl])
+  @@index([contentHash])
+  @@index([isActive])
+  @@map("website_products")
+}
+
+model WebsiteProductImage {
+  id        String        @id @default(uuid()) @db.Uuid
+  productId String        @map("product_id") @db.Uuid
+  imageUrl  String        @map("image_url") @db.Text
+  altText   String?       @map("alt_text") @db.Text
+  sortOrder Int           @default(0) @map("sort_order")
+  createdAt DateTime      @default(now()) @map("created_at")
+  product   WebsiteProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("website_product_images")
+}
+
+model WebsiteProductPublication {
+  id                String        @id @default(uuid()) @db.Uuid
+  productId         String        @map("product_id") @db.Uuid
+  contentId         String?       @map("content_id") @db.Uuid
+  status            String        @default("reserved")
+  selectedImageUrl  String?       @map("selected_image_url") @db.Text
+  selectedImageUrls Json?         @map("selected_image_urls")
+  reservedAt        DateTime      @default(now()) @map("reserved_at")
+  generatedAt       DateTime?     @map("generated_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  product           WebsiteProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId])
+  @@index([status])
+  @@map("website_product_publications")
+}
