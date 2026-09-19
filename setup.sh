@@ -68,12 +68,13 @@ set_env_if_empty POSTGRES_USER "content_manager"
 set_env_if_empty POSTGRES_DB "content_manager"
 set_env_if_empty POSTGRES_PASSWORD "$(random_hex 24)"
 set_env_if_empty AUTH_SECRET "$(random_hex 32)"
-set_env_if_empty APP_ACCESS_PASSWORD "$(random_hex 12)"
 set_env_if_empty APP_PORT "3000"
 
 replace_placeholder POSTGRES_PASSWORD "change-this-password" "$(random_hex 24)"
 replace_placeholder AUTH_SECRET "generate-a-long-random-secret-epcb" "$(random_hex 32)"
-replace_placeholder APP_ACCESS_PASSWORD "epcb2026" "$(random_hex 12)"
+
+# Mật khẩu đăng nhập cố định theo yêu cầu.
+set_env_value APP_ACCESS_PASSWORD "epcb2026"
 
 chmod 600 .env
 
