@@ -29,58 +29,10 @@ else
   NEW_ENV=0
 fi
 
-random_hex() {
-  if command -v openssl >/dev/null 2>&1; then
-    openssl rand -hex "${1:-32}"
-  else
-    od -An -N "${1:-32}" -tx1 /dev/urandom | tr -d ' \n'
-  fi
-}
-
-set_env_if_empty() {
-  local name="$1" value="$2"
-  if ! grep -qE "^${name}=" .env; then
-    printf '%s="%s"\n' "$name" "$value" >> .env
-  elif grep -qE "^${name}=\"?\"?$" .env; then
-    sed -i.bak -E "s|^${name}=.*$|${name}=\"${value}\"|" .env
-    rm -f .env.bak
-  fi
-}
-
-set_env_value() {
-  local name="$1" value="$2"
-  if grep -qE "^${name}=" .env; then
-    sed -i.bak -E "s|^${name}=.*$|${name}=\"${value}\"|" .env
-    rm -f .env.bak
-  else
-    printf '%s="%s"\n' "$name" "$value" >> .env
-  fi
-}
-
-replace_placeholder() {
-  local name="$1" placeholder="$2" value="$3"
-  if grep -qE "^${name}=\"?${placeholder}\"?$" .env; then
-    set_env_value "$name" "$value"
-  fi
-}
-
-set_env_if_empty POSTGRES_USER "content_manager"
-set_env_if_empty POSTGRES_DB "content_manager"
-set_env_if_empty POSTGRES_PASSWORD "$(random_hex 24)"
-set_env_if_empty AUTH_SECRET "$(random_hex 32)"
-set_env_if_empty APP_PORT "3000"
-
-replace_placeholder POSTGRES_PASSWORD "change-this-password" "$(random_hex 24)"
-replace_placeholder AUTH_SECRET "generate-a-long-random-secret-epcb" "$(random_hex 32)"
-
-# Mật khẩu đăng nhập cố định theo yêu cầu.
-set_env_value APP_ACCESS_PASSWORD "epcb2026"
-
 chmod 600 .env
 
 if [ "$NEW_ENV" -eq 1 ]; then
-  log "Đã tạo .env mới. Mật khẩu đăng nhập APP_ACCESS_PASSWORD đã được sinh tự động."
-  printf '    Xem bằng lệnh: grep APP_ACCESS_PASSWORD .env\n'
+  log "Đã tạo .env mới từ .env.example. Hãy kiểm tra các giá trị trước khi deploy."
 fi
 
 if grep -qE '^NEXT_PUBLIC_APP_URL="?http://localhost' .env; then

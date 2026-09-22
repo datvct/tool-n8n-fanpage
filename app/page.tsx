@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image as AntImage } from "antd";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ContentItem,
   Platform,
@@ -46,6 +47,83 @@ const postTypeLabels: Record<PostType, string> = {
   youtube_short: "YouTube Short",
   youtube_video: "YouTube video thường",
 };
+const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
+
+function formatVietnamDateTime(value?: string | Date) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VIETNAM_TIME_ZONE,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatVietnamDate(value?: string | Date) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VIETNAM_TIME_ZONE,
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
+
+function formatVietnamTime(value?: string | Date) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VIETNAM_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatVietnamDay(value?: string | Date) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VIETNAM_TIME_ZONE,
+    day: "2-digit",
+  }).format(date);
+}
+
+function formatVietnamMonth(value?: string | Date) {
+  if (!value) return "—";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VIETNAM_TIME_ZONE,
+    month: "2-digit",
+  }).format(date);
+}
+
+function vietnamDateInputValue(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: VIETNAM_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function vietnamMonthStart(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: VIETNAM_TIME_ZONE,
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(date);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  return new Date(year, month - 1, 1);
+}
 
 function isImageSource(value: string) {
   return value.startsWith("http") || value.startsWith("/api/media");
@@ -70,9 +148,33 @@ function getPostDisplayTitle(post: SocialPost, fallback = "Chưa có tiêu đề
 function getContentPlatforms(item: ContentItem) {
   return [...new Set(
     item.posts.map(
-      (post) => postTypeLabels[post.postType] || platformLabels[post.platform],
+      (post) => post.postType === "post"
+        ? platformLabels[post.platform]
+        : postTypeLabels[post.postType],
     ),
   )].join(" · ") || "Chưa chọn nền tảng";
+}
+
+function getPostChannelLabel(post: SocialPost) {
+  return post.postType === "post"
+    ? platformLabels[post.platform]
+    : postTypeLabels[post.postType];
+}
+
+function getContentTitle(item: ContentItem) {
+  const firstPost = item.posts.find((post) => post.content.trim() || post.title?.trim());
+  return firstPost
+    ? getPostDisplayTitle(firstPost, item.note || "Chưa có tiêu đề")
+    : item.note || "Chưa có tiêu đề";
+}
+
+function getOverallStatus(item: ContentItem): ContentStatus {
+  const statuses = item.posts.map((post) => post.status);
+  if (statuses.includes("failed")) return "failed";
+  if (statuses.length > 0 && statuses.every((status) => status === "published")) return "published";
+  if (statuses.includes("scheduled")) return "scheduled";
+  if (statuses.includes("approved")) return "approved";
+  return "draft";
 }
 
 type View = "dashboard" | "contents" | "calendar" | "published" | "failed";
@@ -267,7 +369,9 @@ export default function Home() {
         </header>
         {lastSyncedAt && !loading && (
           <div className="sync-meta">
-            Cập nhật lúc {lastSyncedAt.toLocaleTimeString("vi-VN")}
+              Cập nhật lúc {lastSyncedAt.toLocaleTimeString("vi-VN", {
+                timeZone: VIETNAM_TIME_ZONE,
+              })}
           </div>
         )}
         {loading && <p className="subtle">Đang tải dữ liệu từ database...</p>}
@@ -539,7 +643,7 @@ function Dashboard({
                           </span>
                         </Link>
                         <br />
-                        <span className="subtle">{item.createdAt}</span>
+                        <span className="subtle">{formatVietnamDateTime(item.createdAt)}</span>
                       </td>
                       <td>{item.employee}</td>
                       <td className="subtle">{getContentPlatforms(item)}</td>
@@ -575,14 +679,19 @@ function Dashboard({
               upcoming.map((post) => (
                 <div className="upcoming" key={post.id}>
                   <div className="date-box">
-                    <small>THÁNG 9</small>10
+                    <strong>{formatVietnamDay(post.scheduledAt)}</strong>
+                    <small>THG {formatVietnamMonth(post.scheduledAt)}</small>
                   </div>
                   <div>
                     <h3>
-                      {postTypeLabels[post.postType] || platformLabels[post.platform]}{" "}
-                      <span className="subtle">· 09:30</span>
+                      {getPostChannelLabel(post)}{" "}
+                      <span className="subtle">
+                        · {formatVietnamTime(post.scheduledAt)}
+                      </span>
                     </h3>
-                    <p className="subtle">{post.employee}</p>
+                    <p className="subtle">
+                      {post.employee} · {formatVietnamDate(post.scheduledAt)}
+                    </p>
                   </div>
                 </div>
               ))
@@ -609,6 +718,8 @@ function ContentList({
   setQuery: (value: string) => void;
   retryPost: (contentId: string, postId: string) => void;
 }) {
+  const router = useRouter();
+
   return (
     <section className="panel">
       <div className="panel-head">
@@ -636,37 +747,85 @@ function ContentList({
             </tr>
           </thead>
           <tbody>
-            {contents.map((item) =>
-              item.posts.map((post) => (
-                <tr key={post.id}>
+            {contents.map((item) => {
+              const overallStatus = getOverallStatus(item);
+              return (
+                <tr
+                  key={item.id}
+                  className="clickable"
+                  tabIndex={0}
+                  onClick={() => router.push(`/content/${item.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      router.push(`/content/${item.id}`);
+                    }
+                  }}
+                >
                   <td>
-                    <strong>{truncateText(getPostDisplayTitle(post), 48)}</strong>
+                    <Link
+                      className="content-link"
+                      href={`/content/${item.id}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <strong>{truncateText(getContentTitle(item), 48)}</strong>
+                    </Link>
                   </td>
                   <td>{item.employee}</td>
-              <td>
-                {postTypeLabels[post.postType] || platformLabels[post.platform]}
-              </td>
                   <td>
-                    <span className={`badge ${post.status}`}>
-                      {statusLabels[post.status]}
+                    <div className="platform-statuses">
+                      {item.posts.length ? (
+                        item.posts.map((post) => (
+                          <span className="platform-status" key={post.id}>
+                            <span className="platform-status-label">
+                              {getPostChannelLabel(post)}
+                            </span>
+                            <span className={`badge ${post.status}`}>
+                              {statusLabels[post.status]}
+                            </span>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="subtle">Chưa có nền tảng</span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`badge ${overallStatus}`}>
+                      {statusLabels[overallStatus]}
                     </span>
                   </td>
                   <td>
-                    {post.status === "failed" ? (
+                    {item.posts.find((post) => post.status === "failed") ? (
                       <button
                         className="secondary"
-                        onClick={() => retryPost(item.id, post.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          const failedPost = item.posts.find((post) => post.status === "failed");
+                          if (failedPost) retryPost(item.id, failedPost.id);
+                        }}
                       >
                         Thử lại
                       </button>
                     ) : (
-                      <Link className="secondary" href={`/content/${item.id}`}>
+                      <Link
+                        className="secondary"
+                        href={`/content/${item.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         Mở bài
                       </Link>
                     )}
                   </td>
                 </tr>
-              )),
+              );
+            })}
+            {!contents.length && (
+              <tr>
+                <td colSpan={5} className="subtle">
+                  Chưa có dữ liệu.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -717,7 +876,7 @@ function DetailView({
           </button>
           <h1 style={{ marginTop: 16 }}>Chi tiết nội dung</h1>
           <p className="subtle">
-            {selected.employee} · Tạo ngày {selected.createdAt}
+            {selected.employee} · Tạo ngày {formatVietnamDateTime(selected.createdAt)}
           </p>
         </div>
         <span className={`badge ${hasPost ? post.status : "draft"}`}>
@@ -874,15 +1033,23 @@ export function DetailViewPro({
     status: "draft" as const,
   };
   const hasPost = Boolean(post.id);
+  const currentStatus = hasPost ? post.status : "draft";
+  const StatusIcon = currentStatus === "published"
+    ? CircleCheck
+    : currentStatus === "failed"
+      ? CircleAlert
+      : currentStatus === "scheduled"
+        ? CalendarClock
+        : FileText;
   const [modal, setModal] = useState<"approve" | "schedule" | null>(null);
   const tomorrow = new Date(Date.now() + 86400000);
-  const defaultDate = tomorrow.toISOString().slice(0, 10);
+  const defaultDate = vietnamDateInputValue(tomorrow);
   const [scheduleDate, setScheduleDate] = useState(defaultDate);
   const [scheduleTime, setScheduleTime] = useState("09:30");
   const [scheduleError, setScheduleError] = useState("");
 
   function confirmSchedule() {
-    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}:00`);
+    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}:00+07:00`);
     if (
       !scheduleDate ||
       !scheduleTime ||
@@ -910,12 +1077,9 @@ export function DetailViewPro({
               <h1>Chi tiết bài viết</h1>
               <p className="subtle">
                 {selected.employee} <span className="meta-dot">•</span> Tạo ngày{" "}
-                {selected.createdAt}
+                {formatVietnamDateTime(selected.createdAt)}
               </p>
             </div>
-            <span className={`badge ${hasPost ? post.status : "draft"}`}>
-              {hasPost ? statusLabels[post.status] : "Chưa có nội dung"}
-            </span>
           </div>
         </div>
       </header>
@@ -987,6 +1151,27 @@ export function DetailViewPro({
           </section>
         </aside>
         <main className="editor-workspace">
+          <section className={`editor-status-banner ${currentStatus}`}>
+            <div className="editor-status-icon">
+              <StatusIcon size={19} />
+            </div>
+            <div className="editor-status-copy">
+              <span>TRẠNG THÁI {platformLabels[platform].toUpperCase()}</span>
+              <strong>{hasPost ? statusLabels[currentStatus] : "Chưa có nội dung"}</strong>
+              <p>
+                {currentStatus === "scheduled" && post.scheduledAt
+                  ? `Đã lên lịch đăng lúc ${formatVietnamDateTime(post.scheduledAt)}`
+                  : currentStatus === "published"
+                    ? "Nội dung đã được đăng thành công trên nền tảng này."
+                    : currentStatus === "failed"
+                      ? post.error || "Nội dung đăng thất bại, cần kiểm tra và thử lại."
+                      : currentStatus === "approved"
+                        ? "Nội dung đã được duyệt và sẵn sàng lên lịch."
+                        : "Nội dung đang ở chế độ chỉnh sửa."}
+              </p>
+            </div>
+            <span className="editor-status-platform">{platformLabels[platform]}</span>
+          </section>
           <div className="platform-bar">
             <div>
               <span className="workspace-label-light">NỀN TẢNG ĐĂNG</span>
@@ -1252,7 +1437,7 @@ export function DetailViewPro({
                         Ngày đăng
                         <input
                           type="date"
-                          min={new Date().toISOString().slice(0, 10)}
+                          min={vietnamDateInputValue()}
                           value={scheduleDate}
                           onChange={(event) =>
                             setScheduleDate(event.target.value)
@@ -1341,7 +1526,7 @@ function PostList({
                   </span>
                 </td>
                 <td className="subtle">
-                  {post.error ?? post.scheduledAt ?? "Đăng thành công"}
+                  {post.error ?? (post.scheduledAt ? formatVietnamDateTime(post.scheduledAt) : "Đăng thành công")}
                 </td>
                 <td>
                   {retryPost && (
@@ -1368,8 +1553,7 @@ function Calendar({
   posts: (SocialPost & { employee: string; contentId: string })[];
 }) {
   const [month, setMonth] = useState(() => {
-    const today = new Date();
-    return new Date(today.getFullYear(), today.getMonth(), 1);
+    return vietnamMonthStart();
   });
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
@@ -1415,8 +1599,7 @@ function Calendar({
           <button
             className="secondary"
             onClick={() => {
-              const today = new Date();
-              setMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+              setMonth(vietnamMonthStart());
             }}
           >
             Tháng hiện tại
