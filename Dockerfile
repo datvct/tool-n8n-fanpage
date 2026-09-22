@@ -27,11 +27,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --chown=nextjs:nodejs docker-entrypoint.prod.sh ./docker-entrypoint.prod.sh
 
 # COPY --chown avoids a very slow recursive ownership scan on LXC overlayfs.
 USER nextjs
 
 EXPOSE 3000
 
-# This project has no migration history yet; db push keeps the current schema deployable.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]
+# This project has no migration history yet; retry transient database startup failures.
+CMD ["sh", "./docker-entrypoint.prod.sh"]

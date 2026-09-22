@@ -40,7 +40,9 @@ if grep -qE '^NEXT_PUBLIC_APP_URL="?http://localhost' .env; then
 fi
 
 log "Build và khởi động production containers"
-docker compose -f "$COMPOSE_FILE" up -d --build
+# Force recreation so changes to networks, Dockerfile, and environment are applied.
+# This does not remove named volumes, so the PostgreSQL data is preserved.
+docker compose -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans
 
 log "Kiểm tra trạng thái"
 docker compose -f "$COMPOSE_FILE" ps
