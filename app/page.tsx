@@ -563,11 +563,6 @@ function Dashboard({
   counts: Record<string, number>;
   contents: ContentItem[];
 }) {
-  const upcoming = contents.flatMap((item) =>
-    item.posts
-      .filter((post) => post.status === "scheduled")
-      .map((post) => ({ ...post, employee: item.employee, id: item.id })),
-  );
   return (
     <>
       <section className="stats">
@@ -586,7 +581,7 @@ function Dashboard({
           </div>
         ))}
       </section>
-      <div className="content-grid">
+      <div className="content-grid dashboard-grid">
         <section className="panel">
           <div className="panel-head">
             <div>
@@ -667,41 +662,6 @@ function Dashboard({
                 )}
               </tbody>
             </table>
-          </div>
-        </section>
-        <section className="panel">
-          <div className="panel-head">
-            <div>
-              <h2>Sắp đăng</h2>
-              <p className="subtle">Các bài đã được lên lịch</p>
-            </div>
-          </div>
-          <div className="side-list">
-            {upcoming.length ? (
-              upcoming.map((post) => (
-                <div className="upcoming" key={post.id}>
-                  <div className="date-box">
-                    <strong>{formatVietnamDay(post.scheduledAt)}</strong>
-                    <small>THG {formatVietnamMonth(post.scheduledAt)}</small>
-                  </div>
-                  <div>
-                    <h3>
-                      {getPostChannelLabel(post)}{" "}
-                      <span className="subtle">
-                        · {formatVietnamTime(post.scheduledAt)}
-                      </span>
-                    </h3>
-                    <p className="subtle">
-                      {post.employee} · {formatVietnamDate(post.scheduledAt)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="subtle" style={{ padding: "20px 0" }}>
-                Chưa có bài sắp đăng.
-              </p>
-            )}
           </div>
         </section>
       </div>

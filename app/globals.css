@@ -515,6 +515,10 @@ h3 {
     gap: 18px;
 }
 
+.dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .panel {
     overflow: hidden;
 }
