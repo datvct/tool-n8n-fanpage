@@ -649,9 +649,11 @@ function Dashboard({
                       <td className="subtle">{getContentPlatforms(item)}</td>
                       <td>
                         <span
-                          className={`badge ${item.posts.some((post) => post.status === "failed") ? "failed" : item.posts[0].status}`}
+                          className={`badge ${getOverallStatus(item)}`}
                         >
-                          {statusLabels[item.posts[0].status]}
+                          {item.posts.length
+                            ? statusLabels[getOverallStatus(item)]
+                            : "Chưa có nội dung"}
                         </span>
                       </td>
                     </tr>
