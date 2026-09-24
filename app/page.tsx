@@ -146,13 +146,17 @@ function getPostDisplayTitle(post: SocialPost, fallback = "Chưa có tiêu đề
 }
 
 function getContentPlatforms(item: ContentItem) {
-  return [...new Set(
-    item.posts.map(
-      (post) => post.postType === "post"
-        ? platformLabels[post.platform]
-        : postTypeLabels[post.postType],
-    ),
-  )].join(" · ") || "Chưa chọn nền tảng";
+  return (
+    [
+      ...new Set(
+        item.posts.map((post) =>
+          post.postType === "post"
+            ? platformLabels[post.platform]
+            : postTypeLabels[post.postType],
+        ),
+      ),
+    ].join(" · ") || "Chưa chọn nền tảng"
+  );
 }
 
 function getPostChannelLabel(post: SocialPost) {
@@ -162,7 +166,9 @@ function getPostChannelLabel(post: SocialPost) {
 }
 
 function getContentTitle(item: ContentItem) {
-  const firstPost = item.posts.find((post) => post.content.trim() || post.title?.trim());
+  const firstPost = item.posts.find(
+    (post) => post.content.trim() || post.title?.trim(),
+  );
   return firstPost
     ? getPostDisplayTitle(firstPost, item.note || "Chưa có tiêu đề")
     : item.note || "Chưa có tiêu đề";
@@ -171,7 +177,8 @@ function getContentTitle(item: ContentItem) {
 function getOverallStatus(item: ContentItem): ContentStatus {
   const statuses = item.posts.map((post) => post.status);
   if (statuses.includes("failed")) return "failed";
-  if (statuses.length > 0 && statuses.every((status) => status === "published")) return "published";
+  if (statuses.length > 0 && statuses.every((status) => status === "published"))
+    return "published";
   if (statuses.includes("scheduled")) return "scheduled";
   if (statuses.includes("approved")) return "approved";
   return "draft";
@@ -323,11 +330,7 @@ export default function Home() {
 
   return (
     <div className="shell">
-      <SidebarPro
-        view={view}
-        setView={setView}
-        failedCount={counts.failed}
-      />
+      <SidebarPro view={view} setView={setView} failedCount={counts.failed} />
       <main className="main">
         <header className="topbar">
           <div className="heading-block">
@@ -358,7 +361,7 @@ export default function Home() {
               className="primary"
               href={
                 process.env.NEXT_PUBLIC_GOOGLE_FORM_URL ||
-                "https://docs.google.com/forms/d/e/1FAIpQLSfyeRJtUGn6NheKkxV5prh6lu5iw937V-funOuSlUi5eXS9vQ/viewform"
+                "https://forms.gle/Yqc51w1LRuoSrTLV9"
               }
               target="_blank"
               rel="noreferrer"
@@ -369,9 +372,10 @@ export default function Home() {
         </header>
         {lastSyncedAt && !loading && (
           <div className="sync-meta">
-              Cập nhật lúc {lastSyncedAt.toLocaleTimeString("vi-VN", {
-                timeZone: VIETNAM_TIME_ZONE,
-              })}
+            Cập nhật lúc{" "}
+            {lastSyncedAt.toLocaleTimeString("vi-VN", {
+              timeZone: VIETNAM_TIME_ZONE,
+            })}
           </div>
         )}
         {loading && <p className="subtle">Đang tải dữ liệu từ database...</p>}
@@ -620,32 +624,44 @@ function Dashboard({
                           <span className="recent-title-list">
                             {item.posts.length ? (
                               item.posts.map((post) => (
-                                <span className="recent-title-item" key={post.id}>
+                                <span
+                                  className="recent-title-item"
+                                  key={post.id}
+                                >
                                   <small>
-                                    {postTypeLabels[post.postType] || platformLabels[post.platform]}
+                                    {postTypeLabels[post.postType] ||
+                                      platformLabels[post.platform]}
                                   </small>
                                   <strong>
                                     {truncateText(
-                                      getPostDisplayTitle(post, item.note || "Chưa có tiêu đề"),
+                                      getPostDisplayTitle(
+                                        post,
+                                        item.note || "Chưa có tiêu đề",
+                                      ),
                                       48,
                                     )}
                                   </strong>
                                 </span>
                               ))
                             ) : (
-                              <strong>{truncateText(item.note || "Chưa có tiêu đề", 58)}</strong>
+                              <strong>
+                                {truncateText(
+                                  item.note || "Chưa có tiêu đề",
+                                  58,
+                                )}
+                              </strong>
                             )}
                           </span>
                         </Link>
                         <br />
-                        <span className="subtle">{formatVietnamDateTime(item.createdAt)}</span>
+                        <span className="subtle">
+                          {formatVietnamDateTime(item.createdAt)}
+                        </span>
                       </td>
                       <td>{item.employee}</td>
                       <td className="subtle">{getContentPlatforms(item)}</td>
                       <td>
-                        <span
-                          className={`badge ${getOverallStatus(item)}`}
-                        >
+                        <span className={`badge ${getOverallStatus(item)}`}>
                           {item.posts.length
                             ? statusLabels[getOverallStatus(item)]
                             : "Chưa có nội dung"}
@@ -763,7 +779,9 @@ function ContentList({
                         className="secondary"
                         onClick={(event) => {
                           event.stopPropagation();
-                          const failedPost = item.posts.find((post) => post.status === "failed");
+                          const failedPost = item.posts.find(
+                            (post) => post.status === "failed",
+                          );
                           if (failedPost) retryPost(item.id, failedPost.id);
                         }}
                       >
@@ -838,7 +856,8 @@ function DetailView({
           </button>
           <h1 style={{ marginTop: 16 }}>Chi tiết nội dung</h1>
           <p className="subtle">
-            {selected.employee} · Tạo ngày {formatVietnamDateTime(selected.createdAt)}
+            {selected.employee} · Tạo ngày{" "}
+            {formatVietnamDateTime(selected.createdAt)}
           </p>
         </div>
         <span className={`badge ${hasPost ? post.status : "draft"}`}>
@@ -996,13 +1015,14 @@ export function DetailViewPro({
   };
   const hasPost = Boolean(post.id);
   const currentStatus = hasPost ? post.status : "draft";
-  const StatusIcon = currentStatus === "published"
-    ? CircleCheck
-    : currentStatus === "failed"
-      ? CircleAlert
-      : currentStatus === "scheduled"
-        ? CalendarClock
-        : FileText;
+  const StatusIcon =
+    currentStatus === "published"
+      ? CircleCheck
+      : currentStatus === "failed"
+        ? CircleAlert
+        : currentStatus === "scheduled"
+          ? CalendarClock
+          : FileText;
   const [modal, setModal] = useState<"approve" | "schedule" | null>(null);
   const tomorrow = new Date(Date.now() + 86400000);
   const defaultDate = vietnamDateInputValue(tomorrow);
@@ -1011,7 +1031,9 @@ export function DetailViewPro({
   const [scheduleError, setScheduleError] = useState("");
 
   function confirmSchedule() {
-    const selectedDateTime = new Date(`${scheduleDate}T${scheduleTime}:00+07:00`);
+    const selectedDateTime = new Date(
+      `${scheduleDate}T${scheduleTime}:00+07:00`,
+    );
     if (
       !scheduleDate ||
       !scheduleTime ||
@@ -1060,7 +1082,9 @@ export function DetailViewPro({
               <span>Media đính kèm</span>
               <small>
                 {selected.images.length} ảnh
-                {selected.videos.length ? ` · ${selected.videos.length} video` : ""}
+                {selected.videos.length
+                  ? ` · ${selected.videos.length} video`
+                  : ""}
               </small>
             </div>
             <div className="context-images">
@@ -1119,42 +1143,49 @@ export function DetailViewPro({
             </div>
             <div className="editor-status-copy">
               <span>TRẠNG THÁI {platformLabels[platform].toUpperCase()}</span>
-              <strong>{hasPost ? statusLabels[currentStatus] : "Chưa có nội dung"}</strong>
+              <strong>
+                {hasPost ? statusLabels[currentStatus] : "Chưa có nội dung"}
+              </strong>
               <p>
                 {currentStatus === "scheduled" && post.scheduledAt
                   ? `Đã lên lịch đăng lúc ${formatVietnamDateTime(post.scheduledAt)}`
                   : currentStatus === "published"
                     ? "Nội dung đã được đăng thành công trên nền tảng này."
                     : currentStatus === "failed"
-                      ? post.error || "Nội dung đăng thất bại, cần kiểm tra và thử lại."
+                      ? post.error ||
+                        "Nội dung đăng thất bại, cần kiểm tra và thử lại."
                       : currentStatus === "approved"
                         ? "Nội dung đã được duyệt và sẵn sàng lên lịch."
                         : "Nội dung đang ở chế độ chỉnh sửa."}
               </p>
             </div>
-            <span className="editor-status-platform">{platformLabels[platform]}</span>
+            <span className="editor-status-platform">
+              {platformLabels[platform]}
+            </span>
           </section>
           <div className="platform-bar">
             <div>
               <span className="workspace-label-light">NỀN TẢNG ĐĂNG</span>
               <div className="platform-tabs">
-                {(["facebook", "linkedin", "youtube"] as Platform[]).map((item) => (
-                  <button
-                    className={platform === item ? "active" : ""}
-                    key={item}
-                    disabled={
-                      !selected.posts.some((post) => post.platform === item)
-                    }
-                    title={
-                      selected.posts.some((post) => post.platform === item)
-                        ? undefined
-                        : `Chưa có nội dung ${platformLabels[item]}`
-                    }
-                    onClick={() => setPlatform(item)}
-                  >
-                    {platformLabels[item]}
-                  </button>
-                ))}
+                {(["facebook", "linkedin", "youtube"] as Platform[]).map(
+                  (item) => (
+                    <button
+                      className={platform === item ? "active" : ""}
+                      key={item}
+                      disabled={
+                        !selected.posts.some((post) => post.platform === item)
+                      }
+                      title={
+                        selected.posts.some((post) => post.platform === item)
+                          ? undefined
+                          : `Chưa có nội dung ${platformLabels[item]}`
+                      }
+                      onClick={() => setPlatform(item)}
+                    >
+                      {platformLabels[item]}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
             <div className="editor-tools">
@@ -1266,12 +1297,18 @@ export function DetailViewPro({
                     ? post.content
                     : `Chưa có nội dung ${platformLabels[platform]}.`}
                 </div>
-                <div className={`preview-image ${selected.videos.length ? "has-video" : ""}`}>
+                <div
+                  className={`preview-image ${selected.videos.length ? "has-video" : ""}`}
+                >
                   {selected.videos.length ? (
                     <div className={`preview-video-wrap ${post.postType}`}>
                       <video
                         className="preview-video"
-                        src={isVideoSource(selected.videos[0]) ? selected.videos[0] : undefined}
+                        src={
+                          isVideoSource(selected.videos[0])
+                            ? selected.videos[0]
+                            : undefined
+                        }
                         controls
                         preload="metadata"
                         playsInline
@@ -1488,7 +1525,10 @@ function PostList({
                   </span>
                 </td>
                 <td className="subtle">
-                  {post.error ?? (post.scheduledAt ? formatVietnamDateTime(post.scheduledAt) : "Đăng thành công")}
+                  {post.error ??
+                    (post.scheduledAt
+                      ? formatVietnamDateTime(post.scheduledAt)
+                      : "Đăng thành công")}
                 </td>
                 <td>
                   {retryPost && (
@@ -1595,7 +1635,9 @@ function Calendar({
               <div className="day-num">{day}</div>
               {events.map((event) => (
                 <div className="event" key={event.id}>
-                  {postTypeLabels[event.postType] || platformLabels[event.platform]} ·{" "}
+                  {postTypeLabels[event.postType] ||
+                    platformLabels[event.platform]}{" "}
+                  ·{" "}
                   {event.scheduledAt
                     ? new Intl.DateTimeFormat("vi-VN", {
                         timeZone: "Asia/Ho_Chi_Minh",
