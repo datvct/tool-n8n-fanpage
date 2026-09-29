@@ -396,9 +396,7 @@ export default function Home() {
           />
         )}
         {!loading && !loadError && view === "calendar" && (
-          <Calendar
-            posts={allPosts.filter((post) => post.status === "scheduled")}
-          />
+          <Calendar posts={allPosts} />
         )}
         {!loading && !loadError && view === "published" && (
           <PostList
@@ -1572,6 +1570,15 @@ function Calendar({
     month: "long",
     year: "numeric",
   }).format(month);
+  const calendarPosts = posts.filter(
+    (post) => post.status === "scheduled" || post.status === "published",
+  );
+
+  function eventDate(post: SocialPost) {
+    return post.status === "published"
+      ? post.publishedAt || post.scheduledAt
+      : post.scheduledAt;
+  }
 
   function scheduledDateKey(value?: string) {
     if (!value) return "";
@@ -1585,16 +1592,19 @@ function Calendar({
     }).format(date);
   }
 
-  const monthPosts = posts.filter((post) =>
-    scheduledDateKey(post.scheduledAt).startsWith(monthKey),
+  const monthPosts = calendarPosts.filter((post) =>
+    scheduledDateKey(eventDate(post)).startsWith(monthKey),
   );
+  const undatedPosts = calendarPosts.filter((post) => !eventDate(post));
 
   return (
     <section className="panel">
       <div className="panel-head">
         <div>
           <h2>{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</h2>
-          <p className="subtle">Bài đã lên lịch · Asia/Ho_Chi_Minh</p>
+          <p className="subtle">
+            Bài đã lên lịch và đã đăng · Asia/Ho_Chi_Minh
+          </p>
         </div>
         <div className="calendar-nav">
           <button
@@ -1634,31 +1644,53 @@ function Calendar({
           const day = index + 1;
           const dayKey = `${monthKey}-${String(day).padStart(2, "0")}`;
           const events = monthPosts.filter(
-            (post) => scheduledDateKey(post.scheduledAt) === dayKey,
+            (post) => scheduledDateKey(eventDate(post)) === dayKey,
           );
           return (
             <div className="day" key={day}>
               <div className="day-num">{day}</div>
               {events.map((event) => (
                 <div className="event" key={event.id}>
-                  {postTypeLabels[event.postType] ||
-                    platformLabels[event.platform]}{" "}
-                  ·{" "}
-                  {event.scheduledAt
+                  <strong>{platformLabels[event.platform]}</strong> ·{" "}
+                  {event.status === "published" ? "Đã đăng" : "Đã lên lịch"}
+                  <br />
+                  {postTypeLabels[event.postType] || "Bài viết"} ·{" "}
+                  {eventDate(event)
                     ? new Intl.DateTimeFormat("vi-VN", {
                         timeZone: "Asia/Ho_Chi_Minh",
                         hour: "2-digit",
                         minute: "2-digit",
-                      }).format(new Date(event.scheduledAt))
+                      }).format(new Date(eventDate(event)!))
                     : ""}
                   <br />
-                  {event.employee}
+                  {truncateText(getPostDisplayTitle(event), 50)}
                 </div>
               ))}
             </div>
           );
         })}
       </div>
+      {undatedPosts.length > 0 && (
+        <div className="undated-posts">
+          <h3>Bài chưa có ngày đăng</h3>
+          <p className="subtle">
+            Các bài này thiếu thời điểm đăng và thời gian lên lịch trong dữ liệu,
+            nên chưa thể đặt vào ngày cụ thể.
+          </p>
+          <div className="undated-post-list">
+            {undatedPosts.map((post) => (
+              <div className="event" key={post.id}>
+                <strong>{platformLabels[post.platform]}</strong> ·{" "}
+                {post.status === "published" ? "Đã đăng" : "Đã lên lịch"}
+                <br />
+                {postTypeLabels[post.postType] || "Bài viết"}
+                <br />
+                {truncateText(getPostDisplayTitle(post), 90)}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
