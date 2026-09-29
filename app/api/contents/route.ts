@@ -56,6 +56,7 @@ export async function GET() {
           description: post.description ?? undefined,
           status: toUiStatus(post.status),
           scheduledAt: post.scheduledAt?.toISOString(),
+          publishedAt: post.publishedAt?.toISOString(),
           error: post.errorMessage ?? undefined,
         })),
       })),

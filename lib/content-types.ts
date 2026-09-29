@@ -20,6 +20,7 @@ export type SocialPost = {
   description?: string;
   status: ContentStatus;
   scheduledAt?: string;
+  publishedAt?: string;
   error?: string;
 };
 

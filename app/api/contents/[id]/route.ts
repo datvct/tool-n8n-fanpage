@@ -59,6 +59,7 @@ export async function GET(
           description: post.description ?? undefined,
         status: post.status,
         scheduledAt: post.scheduledAt?.toISOString(),
+        publishedAt: post.publishedAt?.toISOString(),
         error: post.errorMessage ?? undefined,
       })),
     },

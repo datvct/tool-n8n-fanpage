@@ -1526,9 +1526,15 @@ function PostList({
                 </td>
                 <td className="subtle">
                   {post.error ??
-                    (post.scheduledAt
-                      ? formatVietnamDateTime(post.scheduledAt)
-                      : "Đăng thành công")}
+                    (post.status === "published"
+                      ? post.publishedAt
+                        ? formatVietnamDateTime(post.publishedAt)
+                        : post.scheduledAt
+                          ? formatVietnamDateTime(post.scheduledAt)
+                          : "Đăng thành công"
+                      : post.scheduledAt
+                        ? formatVietnamDateTime(post.scheduledAt)
+                        : "—")}
                 </td>
                 <td>
                   {retryPost && (
