@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 type CallbackBody = {
   postId?: string;
-  platform?: "facebook" | "linkedin" | "youtube";
+  platform?: "facebook" | "linkedin" | "youtube" | "tiktok";
   status?: "published" | "failed";
   externalPostId?: string;
   errorMessage?: string;
@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
       { success: false, error: "Thiếu postId hoặc status." },
       { status: 400 },
     );
+  if (!["published", "failed"].includes(body.status))
+    return NextResponse.json({ success: false, error: "Trạng thái callback không hợp lệ." }, { status: 400 });
   const callbackStatus = body.status;
 
   try {
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
       await tx.publishLog.create({
         data: {
           socialPostId: updated.id,
-          platform: body.platform || updated.platform,
+          platform: updated.platform,
           status: callbackStatus,
           request: toJsonValue(body.request),
           response: toJsonValue(body.response),

@@ -5,3 +5,5 @@ out
 .env.local
 .DS_Store
 .env.backup
+.secrets/
+__pycache__/

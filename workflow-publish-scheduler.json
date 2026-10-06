@@ -21,7 +21,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH due AS (\n  SELECT sp.id\n  FROM social_posts sp\n  WHERE sp.status = 'scheduled'\n    AND sp.scheduled_at <= NOW()\n  ORDER BY sp.scheduled_at ASC\n  FOR UPDATE SKIP LOCKED\n  LIMIT 20\n)\nUPDATE social_posts sp\nSET status = 'publishing', retry_count = sp.retry_count + 1, updated_at = NOW()\nFROM due\nWHERE sp.id = due.id\nRETURNING sp.id, sp.platform, sp.content, sp.retry_count, (SELECT ma.file_url FROM media_assets ma WHERE ma.content_id = sp.content_id ORDER BY ma.sort_order ASC LIMIT 1) AS image_url;",
+        "query": "WITH due AS (\n  SELECT sp.id\n  FROM social_posts sp\n  WHERE sp.status = 'scheduled'\n    AND sp.platform <> 'tiktok'\n    AND sp.scheduled_at <= NOW()\n  ORDER BY sp.scheduled_at ASC\n  FOR UPDATE SKIP LOCKED\n  LIMIT 20\n)\nUPDATE social_posts sp\nSET status = 'publishing', retry_count = sp.retry_count + 1, updated_at = NOW()\nFROM due\nWHERE sp.id = due.id\nRETURNING sp.id, sp.platform, sp.content, sp.retry_count, (SELECT ma.file_url FROM media_assets ma WHERE ma.content_id = sp.content_id ORDER BY ma.sort_order ASC LIMIT 1) AS image_url;",
         "options": {}
       },
       "id": "claim-due-posts",

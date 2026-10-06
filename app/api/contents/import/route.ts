@@ -19,7 +19,8 @@ type ImportBody = {
   facebookContent?: string;
   linkedinContent?: string;
   youtubeContent?: string;
-  postType?: "post" | "facebook_reel" | "youtube_short" | "youtube_video";
+  tiktokContent?: string;
+  postType?: "post" | "facebook_reel" | "youtube_short" | "youtube_video" | "tiktok_video";
   videoUrl?: string;
   videoFileName?: string;
   videoFileId?: string;
@@ -59,12 +60,20 @@ export async function POST(request: NextRequest) {
   if (
     !body.facebookContent?.trim() &&
     !body.linkedinContent?.trim() &&
-    !body.youtubeContent?.trim()
+    !body.youtubeContent?.trim() &&
+    !body.tiktokContent?.trim()
   )
     return errorResponse(
       "EMPTY_CONTENT",
       "AI chưa tạo được nội dung cho nền tảng nào.",
     );
+
+  if (body.tiktokContent?.trim()) {
+    if (!body.videoFileId?.trim() && !body.videoUrl?.trim())
+      return errorResponse("MISSING_TIKTOK_VIDEO", "TikTok cần một video đính kèm.");
+    if (body.tiktokContent.trim().length > 2200)
+      return errorResponse("TIKTOK_CAPTION_TOO_LONG", "Caption TikTok tối đa 2.200 ký tự.");
+  }
 
   const posts = [
     body.facebookContent?.trim()
@@ -92,6 +101,13 @@ export async function POST(request: NextRequest) {
           content: body.youtubeContent.trim(),
           title: body.youtubeTitle?.trim() || null,
           description: body.youtubeDescription?.trim() || null,
+        }
+      : null,
+    body.tiktokContent?.trim()
+      ? {
+          platform: "tiktok" as const,
+          postType: "tiktok_video" as const,
+          content: body.tiktokContent.trim(),
         }
       : null,
   ].filter((post): post is NonNullable<typeof post> => Boolean(post));
@@ -131,6 +147,8 @@ export async function POST(request: NextRequest) {
     where: { source_sourceRowId: { source: "google_sheet", sourceRowId } },
     include: { socialPosts: true },
   });
+  if (existing?.socialPosts.some((post) => post.platform === "tiktok" && ["approved", "scheduled", "publishing", "published"].includes(post.status)))
+    return errorResponse("TIKTOK_POST_LOCKED", "Không thể nhập lại nội dung hoặc video của bài TikTok đã duyệt hoặc đã gửi đăng.", 409);
   if (existing) {
     const updated = await prisma.$transaction(async (tx) => {
       await tx.contentItem.update({

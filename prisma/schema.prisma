@@ -26,6 +26,7 @@ enum Platform {
   facebook
   linkedin
   youtube
+  tiktok
 }
 
 enum PostType {
@@ -33,6 +34,7 @@ enum PostType {
   facebook_reel
   youtube_short
   youtube_video
+  tiktok_video
 }
 
 enum SocialPostStatus {
@@ -119,6 +121,7 @@ model SocialPost {
   content        String           @db.Text
   title          String?          @db.Text
   description    String?          @db.Text
+  tiktokOptions  Json?            @map("tiktok_options")
   status         SocialPostStatus  @default(draft)
   scheduledAt    DateTime?        @map("scheduled_at")
   publishedAt    DateTime?        @map("published_at")

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isTikTokOptions, validateTikTokPost, type TikTokOptions } from "@/lib/tiktok";
+import { getTikTokCreator } from "@/lib/tiktok-server";
 
 export const runtime = "nodejs";
 
@@ -9,6 +12,7 @@ type UpdateBody = {
   scheduledAt?: string | null;
   title?: string;
   description?: string;
+  tiktokOptions?: TikTokOptions;
 };
 
 const VIETNAM_OFFSET = "+07:00";
@@ -60,7 +64,8 @@ export async function PATCH(
       !body.status &&
       body.scheduledAt === undefined &&
       body.title === undefined &&
-      body.description === undefined)
+      body.description === undefined &&
+      body.tiktokOptions === undefined)
   )
     return NextResponse.json(
       { success: false, error: "Không có dữ liệu cần cập nhật." },
@@ -73,7 +78,15 @@ export async function PATCH(
     scheduledAt?: Date | null;
     title?: string;
     description?: string;
+    tiktokOptions?: TikTokOptions;
   } = {};
+  if (body.tiktokOptions !== undefined) {
+    if (!isTikTokOptions(body.tiktokOptions))
+      return NextResponse.json({ success: false, error: "Cài đặt TikTok không hợp lệ." }, { status: 400 });
+    data.tiktokOptions = body.tiktokOptions;
+  }
+  if (body.status && !["draft", "approved", "scheduled"].includes(body.status))
+    return NextResponse.json({ success: false, error: "Trạng thái không hợp lệ." }, { status: 400 });
   if (body.content !== undefined) {
     if (!body.content.trim())
       return NextResponse.json(
@@ -101,7 +114,40 @@ export async function PATCH(
   }
 
   try {
-    const post = await prisma.socialPost.update({ where: { id }, data });
+    const current = await prisma.socialPost.findUnique({ where: { id }, include: { item: { include: { media: true } } } });
+    if (!current)
+      return NextResponse.json({ success: false, error: "Không tìm thấy bài đăng." }, { status: 404 });
+    if (current.platform === "tiktok") {
+      if (["published", "publishing", "scheduled"].includes(current.status))
+        return NextResponse.json({ success: false, error: "Bài TikTok đã được gửi đăng; không thể sửa hoặc gửi lại." }, { status: 409 });
+      if ((data.content ?? current.content).length > 2200)
+        return NextResponse.json({ success: false, error: "Caption TikTok tối đa 2.200 ký tự." }, { status: 400 });
+      if (body.status === "approved" || body.status === "scheduled") {
+        const options = data.tiktokOptions ?? current.tiktokOptions;
+        const validationError = validateTikTokPost(data.content ?? current.content, options);
+        if (validationError)
+          return NextResponse.json({ success: false, error: validationError }, { status: 400 });
+        const videos = current.item.media.filter((media) => media.mimeType?.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(media.fileName));
+        if (videos.length !== 1)
+          return NextResponse.json({ success: false, error: "Mỗi bài TikTok cần đúng một video." }, { status: 400 });
+        let creator;
+        try { creator = await getTikTokCreator(); } catch (error) {
+          return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Không thể kết nối TikTok." }, { status: 503 });
+        }
+        if (isTikTokOptions(options) && !creator.privacy_level_options.includes(options.privacyLevel))
+          return NextResponse.json({ success: false, error: "Quyền riêng tư đã chọn không còn được tài khoản TikTok hỗ trợ." }, { status: 400 });
+      }
+      if (body.status === "scheduled" && current.status !== "approved")
+        return NextResponse.json({ success: false, error: "Cần duyệt bài TikTok trước khi lên lịch." }, { status: 400 });
+    }
+    if (body.status === "scheduled") {
+      const scheduledAt = data.scheduledAt === undefined ? current.scheduledAt : data.scheduledAt;
+      if (!scheduledAt || scheduledAt <= new Date())
+        return NextResponse.json({ success: false, error: "Vui lòng chọn thời gian đăng ở tương lai." }, { status: 400 });
+      if (!process.env.N8N_PUBLISH_WEBHOOK_URL)
+        return NextResponse.json({ success: false, error: "Chưa cấu hình URL scheduler của n8n." }, { status: 503 });
+    }
+    const post = await prisma.socialPost.update({ where: { id, ...(current.platform === "tiktok" ? { status: current.status } : {}) }, data });
 
     if (body.status === "scheduled" && post.scheduledAt) {
       const scheduledPost = await prisma.socialPost.findUnique({
@@ -143,6 +189,7 @@ export async function PATCH(
             content: post.content,
             title: post.title,
             description: post.description,
+            tiktokOptions: post.tiktokOptions,
             employee: scheduledPost.item.employeeName,
             note: scheduledPost.item.originalNote,
             media: scheduledPost.item.media.map((media) => ({
@@ -177,6 +224,8 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: post });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025")
+      return NextResponse.json({ success: false, error: "Bài đăng vừa thay đổi trạng thái. Hãy tải lại nội dung." }, { status: 409 });
     console.error("Failed to update social post", error);
     return NextResponse.json(
       { success: false, error: "Không thể cập nhật bài đăng." },

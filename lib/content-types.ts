@@ -1,9 +1,10 @@
-export type Platform = "facebook" | "linkedin" | "youtube";
+export type Platform = "facebook" | "linkedin" | "youtube" | "tiktok";
 export type PostType =
   | "post"
   | "facebook_reel"
   | "youtube_short"
-  | "youtube_video";
+  | "youtube_video"
+  | "tiktok_video";
 export type ContentStatus =
   | "draft"
   | "approved"
@@ -18,6 +19,7 @@ export type SocialPost = {
   content: string;
   title?: string;
   description?: string;
+  tiktokOptions?: import("./tiktok").TikTokOptions | null;
   status: ContentStatus;
   scheduledAt?: string;
   publishedAt?: string;

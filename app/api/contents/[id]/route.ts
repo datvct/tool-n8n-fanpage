@@ -57,6 +57,7 @@ export async function GET(
           content: post.content,
           title: post.title ?? undefined,
           description: post.description ?? undefined,
+          tiktokOptions: post.tiktokOptions,
         status: post.status,
         scheduledAt: post.scheduledAt?.toISOString(),
         publishedAt: post.publishedAt?.toISOString(),

@@ -40,7 +40,7 @@ export default function ContentEditorRoute({ id }: { id: string }) {
         const result = await response.json().catch(() => null);
         setError(result?.error || "Không thể lưu thay đổi.");
       }
-    });
+    }).catch(() => setError("Không thể kết nối để lưu thay đổi. Hãy tải lại trang trước khi tiếp tục."));
   }
 
   function approvePost() {
@@ -53,8 +53,8 @@ export default function ContentEditorRoute({ id }: { id: string }) {
     if (content && post?.status === "approved") updatePost(content.id, post.id, { status: "scheduled", scheduledAt });
   }
 
-  if (error) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
+  if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
   if (!content) return <main className="shared-page"><Spin size="large" /></main>;
 
-  return <DetailViewPro selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} saved={saved} setSaved={setSaved} />;
+  return <>{error && <div className="shared-error" role="alert">{error}</div>}<DetailViewPro selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} saved={saved} setSaved={setSaved} /></>;
 }

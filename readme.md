@@ -11,6 +11,10 @@ npm run dev
 
 Open `http://localhost:3000`.
 
+## TikTok Video
+
+Đã bổ sung luồng nhận video, tạo caption, duyệt, lên lịch và đăng TikTok qua n8n. Xem [hướng dẫn cấu hình TikTok](TIKTOK_SETUP.md) để cập nhật database, token, credentials và Google Form/Sheet.
+
 ## 1.1 Cấu hình n8n và database thật
 
 Đảm bảo app và n8n cùng trỏ tới PostgreSQL có cùng dữ liệu. Trong n8n đặt:

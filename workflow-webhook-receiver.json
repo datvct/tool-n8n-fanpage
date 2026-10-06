@@ -76,6 +76,30 @@
               },
               "renameOutput": true,
               "outputKey": "Youtube"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0faf116b-d105-49e1-be3f-12437f70e01d",
+                    "leftValue": "={{ $json.platform }}",
+                    "rightValue": "tiktok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "TikTok"
             }
           ]
         },
@@ -970,7 +994,7 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nconst platform = String(body.platform || '').trim().toLowerCase();\nif (!['facebook', 'linkedin', 'youtube'].includes(platform)) throw new Error('Unsupported platform');\nconst postType = String(body.postType || 'post').trim().toLowerCase();\nconst content = String(body.content || body.description || body.title || '').trim();\nif (!content) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\n\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  url = url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n  const driveMatch = url.match(/drive\\.google\\.com\\/file\\/d\\/([A-Za-z0-9_-]+)/) || url.match(/[?&]id=([A-Za-z0-9_-]+)/);\n  if (driveMatch && url.includes('drive.google.com')) {\n    url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  }\n  return url;\n};\n\nconst rawMedia = Array.isArray(body.media) ? body.media : (Array.isArray(body.mediaUrls) ? body.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\n\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform, postType, content, title: String(body.title || '').trim(), description: String(body.description || '').trim(), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
+        "jsCode": "const body = $json.body || $json;\nif (!body.postId) throw new Error('Missing postId');\nif (!body.scheduledAt) throw new Error('Missing scheduledAt');\nconst platform = String(body.platform || '').trim().toLowerCase();\nif (!['facebook', 'linkedin', 'youtube', 'tiktok'].includes(platform)) throw new Error('Unsupported platform');\nconst postType = String(body.postType || 'post').trim().toLowerCase();\nconst content = String(body.content || body.description || body.title || '').trim();\nif (!content) throw new Error('Missing content');\nconst scheduledAt = new Date(body.scheduledAt);\nif (Number.isNaN(scheduledAt.getTime())) throw new Error('Invalid scheduledAt');\n\nconst cleanUrl = (value) => {\n  let url = String(value || '').trim();\n  const markdownMatch = url.match(/^\\[(.*?)\\]\\((.*?)\\)$/);\n  if (markdownMatch) url = markdownMatch[2];\n  url = url.replace(/\\\\&/g, '&').replace(/&amp;/g, '&').trim();\n  const driveMatch = url.match(/drive\\.google\\.com\\/file\\/d\\/([A-Za-z0-9_-]+)/) || url.match(/[?&]id=([A-Za-z0-9_-]+)/);\n  if (driveMatch && url.includes('drive.google.com')) {\n    url = 'https://drive.google.com/uc?export=download&confirm=t&id=' + driveMatch[1];\n  }\n  return url;\n};\n\nconst rawMedia = Array.isArray(body.media) ? body.media : (Array.isArray(body.mediaUrls) ? body.mediaUrls : []);\nconst media = rawMedia.map((item) => {\n  const source = typeof item === 'string' ? { url: item } : (item || {});\n  return { ...source, url: cleanUrl(source.url || source.originalUrl || source.videoUrl) };\n}).filter((item) => item.url);\n\nreturn { json: { postId: String(body.postId), scheduledAt: scheduledAt.toISOString(), platform, postType, content, tiktokOptions: body.tiktokOptions || null, title: String(body.title || '').trim(), description: String(body.description || '').trim(), employee: String(body.employee || ''), note: String(body.note || ''), media, mediaUrls: media.map((item) => item.url) } };"
       },
       "id": "204714ac-1e1c-4f19-b000-350d7f1a6064",
       "name": "Chuẩn hóa dữ liệu publish",
@@ -1556,6 +1580,375 @@
         6320
       ],
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $json;\nif (payload.postType !== 'tiktok_video') throw new Error('TikTok chỉ hỗ trợ tiktok_video.');\nconst media = (payload.media || []).filter(m => String(m.mimeType || '').startsWith('video/') || /\\.(mp4|mov|webm)(?:[?#]|$)/i.test(m.fileName || m.url || ''));\nif (media.length !== 1 || !media[0].url) throw new Error('TikTok cần đúng một video.');\nif (!payload.content?.trim() || payload.content.length > 2200) throw new Error('Caption TikTok cần từ 1 đến 2200 ký tự.');\nconst options = payload.tiktokOptions;\nif (!options?.privacyLevel) throw new Error('Chưa chọn quyền riêng tư TikTok.');\nif (options.brandContent && options.privacyLevel === 'SELF_ONLY') throw new Error('Branded content không hỗ trợ SELF_ONLY.');\nreturn [{json: {...payload, video_url: media[0].url}}];"
+      },
+      "id": "5b36d0ef-2b5f-4d5c-941c-01b6646143d1",
+      "name": "Prepare TikTok Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13780,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/creator_info/query/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "10967e77-eadb-4e72-bcb6-f39bb502a459",
+      "name": "Query TikTok Creator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -13560,
+        7000
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "TikTok Content Posting Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.error?.code !== 'ok') throw new Error('TikTok creator: ' + ($json.error?.code || 'invalid_response'));\nconst payload = $('Prepare TikTok Video').first().json;\nconst creator = $json.data;\nif (!creator?.privacy_level_options?.includes(payload.tiktokOptions.privacyLevel)) throw new Error('Quyền riêng tư không được tài khoản TikTok hỗ trợ.');\nreturn [{json: {...payload, creator}}];"
+      },
+      "id": "e61dc32b-b3ac-4155-9dc3-6775d84d6678",
+      "name": "Validate TikTok Creator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -13340,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video_url }}",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "id": "7220fe81-bf1e-4f8f-bfa2-f769bf7f96ae",
+      "name": "Download TikTok Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -13120,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst mime = item.binary?.data?.mimeType || '';\nif (/html|json|text/i.test(mime) || /^\\s*(?:<!doctype|<html)/i.test(buffer.subarray(0, 100).toString())) throw new Error('Link video trả về trang HTML; kiểm tra quyền tải file Drive.');\n// Detect the container instead of trusting Drive's generic application/octet-stream.\nconst signature = buffer.subarray(0, 16);\nconst videoMime = signature.subarray(4, 8).toString() === 'ftyp' ? (signature.subarray(8, 12).toString() === 'qt  ' ? 'video/quicktime' : 'video/mp4') : signature.subarray(0, 4).toString('hex') === '1a45dfa3' ? 'video/webm' : '';\nif (!videoMime) throw new Error('Video phải là MP4, MOV hoặc WebM.');\nconst size = buffer.length;\nif (!size || size > 4 * 1024 ** 3) throw new Error('Video TikTok phải lớn hơn 0 và không quá 4 GB.');\nconst chunkSize = Math.min(size, 32 * 1024 ** 2);\nreturn [{json: {...$('Validate TikTok Creator').first().json, video_size: size, chunk_size: chunkSize, total_chunk_count: Math.max(1, Math.floor(size / chunkSize)), video_mime: videoMime}, binary: item.binary}];"
+      },
+      "id": "47c5b650-161a-42ee-bb82-efb9e8d67589",
+      "name": "Measure TikTok Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12900,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/video/init/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({post_info: { title: $json.content, privacy_level: $json.tiktokOptions.privacyLevel, disable_comment: !$json.tiktokOptions.allowComment || $json.creator.comment_disabled, disable_duet: !$json.tiktokOptions.allowDuet || $json.creator.duet_disabled, disable_stitch: !$json.tiktokOptions.allowStitch || $json.creator.stitch_disabled, brand_organic_toggle: !!$json.tiktokOptions.brandOrganic, brand_content_toggle: !!$json.tiktokOptions.brandContent, is_aigc: !!$json.tiktokOptions.isAigc }, source_info: {source: 'FILE_UPLOAD', video_size: $json.video_size, chunk_size: $json.chunk_size, total_chunk_count: $json.total_chunk_count} }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "09bcbe39-0a62-47b5-93cc-4054fbc16477",
+      "name": "Initialize TikTok Publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -12680,
+        7000
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "TikTok Content Posting Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "if ($json.error?.code !== 'ok' || !$json.data?.publish_id || !$json.data?.upload_url) throw new Error('TikTok init: ' + ($json.error?.code || 'invalid_response'));\nconst uploadUrl = $json.data.upload_url;\nif (!/^https:\\/\\/[^/]+\\.tiktokapis\\.com\\//i.test(uploadUrl)) throw new Error('Invalid TikTok upload host');\nreturn [{json: {...$('Measure TikTok Video').first().json, publish_id: $json.data.publish_id, upload_url: uploadUrl}, binary: $('Measure TikTok Video').first().binary}];"
+      },
+      "id": "6736ab2c-8011-4509-bc66-5f275abc995e",
+      "name": "Validate TikTok Upload Session",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12460,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const session = $json;\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst chunks = [];\nfor (let index = 0; index < session.total_chunk_count; index++) {\n  const start = index * session.chunk_size;\n  const end = index === session.total_chunk_count - 1 ? session.video_size : start + session.chunk_size;\n  const binary = await this.helpers.prepareBinaryData(buffer.subarray(start, end), 'tiktok-chunk', session.video_mime);\n  chunks.push({json: {upload_url: session.upload_url, content_range: `bytes ${start}-${end - 1}/${session.video_size}`, chunk_length: end - start, video_mime: session.video_mime}, binary: {data: binary}});\n}\nreturn chunks;"
+      },
+      "id": "3ab4aa68-d59a-46a9-85e8-d7014ce6ecfd",
+      "name": "Split TikTok Video Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -12240,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "59702b92-a0a6-4e6e-a9e6-946be519e4b0",
+      "name": "Loop TikTok Chunks",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -12020,
+        7000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $json.upload_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.video_mime }}"
+            },
+            {
+              "name": "Content-Length",
+              "value": "={{ String($json.chunk_length) }}"
+            },
+            {
+              "name": "Content-Range",
+              "value": "={{ $json.content_range }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {
+          "timeout": 300000,
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "1f37332b-156a-4b1f-8679-54fe1a3dd33b",
+      "name": "Upload TikTok Chunk",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -11800,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {publish_id: $('Validate TikTok Upload Session').first().json.publish_id, pollCount: 0}}];"
+      },
+      "id": "5900ac8e-9090-4f97-9d38-d9ad0cc2d130",
+      "name": "Start TikTok Status Poll",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -11580,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "amount": 30,
+        "unit": "seconds"
+      },
+      "id": "6a861d33-f949-4409-b0a7-8d5702b088d8",
+      "name": "Wait TikTok Processing",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -11360,
+        7000
+      ],
+      "webhookId": "1fe2bbfb-3278-43d0-8516-3ff2705c053b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://open.tiktokapis.com/v2/post/publish/status/fetch/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({publish_id: $json.publish_id}) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "7ad0ed90-cc8d-4c42-ae66-c27b58cc705a",
+      "name": "Fetch TikTok Publish Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -11140,
+        7000
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "TikTok Content Posting Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const previous = $('Wait TikTok Processing').first(0, $runIndex).json;\nif ($json.error?.code !== 'ok') throw new Error('TikTok status: ' + ($json.error?.code || 'invalid_response') + '. Kiểm tra publish_id ' + previous.publish_id + ' trước khi đăng lại.');\nconst state = $json.data?.status;\nif (state === 'FAILED') throw new Error('TikTok: ' + ($json.data.fail_reason || 'publish_failed'));\nconst pollCount = previous.pollCount + 1;\nif (state !== 'PUBLISH_COMPLETE' && pollCount >= 120) throw new Error('Chưa xác nhận kết quả TikTok sau 60 phút; publish_id=' + previous.publish_id + '. Kiểm tra trạng thái trước khi đăng lại để tránh trùng video.');\nreturn [{json: {publish_id: previous.publish_id, pollCount, complete: state === 'PUBLISH_COMPLETE', externalPostId: String($json.data?.publicaly_available_post_id?.[0] || previous.publish_id), response: $json}}];"
+      },
+      "id": "3390e090-d12e-4b5c-8230-cce5715a67fd",
+      "name": "Evaluate TikTok Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -10920,
+        7000
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.complete }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a3ec5f5b-779e-422c-aad9-f64eae4c348c",
+      "name": "TikTok Publish Complete",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -10700,
+        7000
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTENT_MANAGER_URL + '/api/publish/callback' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'tiktok', status: 'published', externalPostId: $json.externalPostId, response: $json.response }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "942f616c-3a24-4f38-b6fc-6b3a4423fec5",
+      "name": "Callback Backend Published TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -10480,
+        7000
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Content Manager Publish Callback"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CONTENT_MANAGER_URL + '/api/publish/callback' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'tiktok', status: 'failed', errorMessage: $json.error?.message || $json.message || 'TikTok publish failed' }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "5f85cddc-6af8-43aa-ac2e-9c7b27ca82a1",
+      "name": "Callback Backend Failed TikTok",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -10260,
+        7000
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Content Manager Publish Callback"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     }
   ],
   "connections": {
@@ -1578,6 +1971,13 @@
         [
           {
             "node": "Prepare YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare TikTok Video",
             "type": "main",
             "index": 0
           }
@@ -2099,6 +2499,269 @@
         [
           {
             "node": "Callback Backend Failed Facebook Reel Finish Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare TikTok Video": {
+      "main": [
+        [
+          {
+            "node": "Query TikTok Creator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query TikTok Creator": {
+      "main": [
+        [
+          {
+            "node": "Validate TikTok Creator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate TikTok Creator": {
+      "main": [
+        [
+          {
+            "node": "Download TikTok Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download TikTok Video": {
+      "main": [
+        [
+          {
+            "node": "Measure TikTok Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Measure TikTok Video": {
+      "main": [
+        [
+          {
+            "node": "Initialize TikTok Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize TikTok Publish": {
+      "main": [
+        [
+          {
+            "node": "Validate TikTok Upload Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate TikTok Upload Session": {
+      "main": [
+        [
+          {
+            "node": "Split TikTok Video Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split TikTok Video Chunks": {
+      "main": [
+        [
+          {
+            "node": "Loop TikTok Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop TikTok Chunks": {
+      "main": [
+        [
+          {
+            "node": "Start TikTok Status Poll",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload TikTok Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload TikTok Chunk": {
+      "main": [
+        [
+          {
+            "node": "Loop TikTok Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start TikTok Status Poll": {
+      "main": [
+        [
+          {
+            "node": "Wait TikTok Processing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait TikTok Processing": {
+      "main": [
+        [
+          {
+            "node": "Fetch TikTok Publish Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch TikTok Publish Status": {
+      "main": [
+        [
+          {
+            "node": "Evaluate TikTok Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate TikTok Status": {
+      "main": [
+        [
+          {
+            "node": "TikTok Publish Complete",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TikTok Publish Complete": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published TikTok",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait TikTok Processing",
             "type": "main",
             "index": 0
           }

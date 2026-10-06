@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Image as AntImage } from "antd";
 import Link from "next/link";
+import TikTokPostOptions from "@/app/content/TikTokPostOptions";
+import { validateTikTokPost } from "@/lib/tiktok";
 import { useRouter } from "next/navigation";
 import {
   ContentItem,
@@ -40,12 +42,14 @@ const platformLabels: Record<Platform, string> = {
   facebook: "Facebook",
   linkedin: "LinkedIn",
   youtube: "YouTube",
+  tiktok: "TikTok",
 };
 const postTypeLabels: Record<PostType, string> = {
   post: "Bài viết thường",
   facebook_reel: "Facebook Reel",
   youtube_short: "YouTube Short",
   youtube_video: "YouTube video thường",
+  tiktok_video: "TikTok Video",
 };
 const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
 
@@ -308,7 +312,7 @@ export default function Home() {
   function retryPost(contentId: string, postId: string) {
     updatePost(contentId, postId, {
       status: "scheduled",
-      scheduledAt: "2026-09-10 09:30",
+      scheduledAt: new Date(Date.now() + 60_000).toISOString(),
       error: undefined,
     });
   }
@@ -906,7 +910,7 @@ function DetailView({
       </section>
       <section className="panel">
         <div className="tabs">
-          {(["facebook", "linkedin", "youtube"] as Platform[]).map((item) => (
+          {(["facebook", "linkedin", "youtube", "tiktok"] as Platform[]).map((item) => (
             <button
               className={platform === item ? "active" : ""}
               key={item}
@@ -922,7 +926,7 @@ function DetailView({
             <h3 style={{ marginBottom: 10 }}>Chỉnh sửa nội dung</h3>
             <textarea
               value={post.content}
-              disabled={!hasPost || post.status === "published"}
+              disabled={!hasPost || post.status === "published" || (post.platform === "tiktok" && post.status === "scheduled")}
               onChange={(event) =>
                 updatePost(selected.id, post.id, {
                   content: event.target.value,
@@ -1012,6 +1016,9 @@ export function DetailViewPro({
     status: "draft" as const,
   };
   const hasPost = Boolean(post.id);
+  const tiktokValidationError = post.platform === "tiktok"
+    ? selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video." : validateTikTokPost(post.content, post.tiktokOptions)
+    : null;
   const currentStatus = hasPost ? post.status : "draft";
   const StatusIcon =
     currentStatus === "published"
@@ -1165,7 +1172,7 @@ export function DetailViewPro({
             <div>
               <span className="workspace-label-light">NỀN TẢNG ĐĂNG</span>
               <div className="platform-tabs">
-                {(["facebook", "linkedin", "youtube"] as Platform[]).map(
+                {(["facebook", "linkedin", "youtube", "tiktok"] as Platform[]).map(
                   (item) => (
                     <button
                       className={platform === item ? "active" : ""}
@@ -1207,6 +1214,16 @@ export function DetailViewPro({
                 </div>
                 <span className="ai-tag">AI đã tạo</span>
               </div>
+              {hasPost && post.platform === "tiktok" && (
+                <TikTokPostOptions
+                  value={post.tiktokOptions}
+                  disabled={post.status === "published" || post.status === "scheduled"}
+                  onChange={(tiktokOptions) => updatePost(selected.id, post.id, {
+                    tiktokOptions,
+                    status: post.status === "approved" ? "draft" : post.status,
+                  })}
+                />
+              )}
               {hasPost && post.platform === "youtube" && (
                 <div className="video-copy-fields">
                   <label>
@@ -1251,8 +1268,9 @@ export function DetailViewPro({
               )}
               <textarea
                 className="pro-textarea"
+                maxLength={post.platform === "tiktok" ? 2200 : undefined}
                 value={post.content}
-                disabled={!hasPost || post.status === "published"}
+                disabled={!hasPost || post.status === "published" || (post.platform === "tiktok" && post.status === "scheduled")}
                 onChange={(event) =>
                   updatePost(selected.id, post.id, {
                     content: event.target.value,
@@ -1353,6 +1371,7 @@ export function DetailViewPro({
           </div>
           <div className="editor-action-bar">
             <div>
+              {tiktokValidationError && <span role="status">{tiktokValidationError}</span>}
               {saved && (
                 <span className="saved-message">
                   <Check size={15} /> Đã lưu thay đổi
@@ -1360,11 +1379,12 @@ export function DetailViewPro({
               )}
             </div>
             <div className="action-buttons">
-              {post.status === "draft" && (
+              {(post.status === "draft" || (post.platform === "tiktok" && post.status === "failed")) && (
                 <button
                   className="secondary"
                   onClick={() => setModal("approve")}
-                  disabled={!hasPost || !post.content.trim()}
+                  disabled={!hasPost || !post.content.trim() || Boolean(tiktokValidationError)}
+                  title={tiktokValidationError || undefined}
                 >
                   <Check size={15} /> Duyệt bài
                 </button>
@@ -1372,7 +1392,7 @@ export function DetailViewPro({
               <button
                 className="primary"
                 onClick={() => setModal("schedule")}
-                disabled={!hasPost || post.status !== "approved"}
+                disabled={!hasPost || post.status !== "approved" || Boolean(tiktokValidationError)}
               >
                 <CalendarClock size={15} /> Lên lịch đăng
               </button>
@@ -1535,7 +1555,10 @@ function PostList({
                         : "—")}
                 </td>
                 <td>
-                  {retryPost && (
+                  {retryPost && post.platform === "tiktok" && (
+                    <Link className="secondary" href={`/content/${post.contentId}`}>Xem và duyệt lại</Link>
+                  )}
+                  {retryPost && post.platform !== "tiktok" && (
                     <button
                       className="secondary"
                       onClick={() => retryPost(post.contentId, post.id)}
