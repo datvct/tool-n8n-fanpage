@@ -1903,3 +1903,32 @@ textarea:focus {
 .tiktok-options select { display: block; width: 100%; margin-top: 6px; padding: 8px; }
 .tiktok-option-check input { margin-right: 8px; }
 .tiktok-options p { font-size: 13px; line-height: 1.5; }
+
+.content-row-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.delete-content-control { display: inline-flex; }
+.secondary.delete-content-button {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--red-ink);
+    border-color: #efc7c7;
+}
+.secondary.delete-content-button:hover:not(:disabled) {
+    color: #a51c30;
+    background: #fff1f2;
+    border-color: #d7838c;
+}
+.editor-header-with-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+.delete-content-title { margin-bottom: 12px; font-weight: 700; overflow-wrap: anywhere; }
+.delete-content-note { margin-top: 12px; color: var(--muted); }

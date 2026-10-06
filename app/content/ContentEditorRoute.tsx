@@ -56,5 +56,5 @@ export default function ContentEditorRoute({ id }: { id: string }) {
   if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
   if (!content) return <main className="shared-page"><Spin size="large" /></main>;
 
-  return <>{error && <div className="shared-error" role="alert">{error}</div>}<DetailViewPro selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} saved={saved} setSaved={setSaved} /></>;
+  return <>{error && <div className="shared-error" role="alert">{error}</div>}<DetailViewPro selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} onDeleted={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} saved={saved} setSaved={setSaved} /></>;
 }

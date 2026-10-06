@@ -41,6 +41,14 @@ test('Sheet TikTok row -> AI -> import payload includes only TikTok',async()=>{
   assert.equal(body.tiktokContent,'Demo #epcb');
   assert.equal(body.facebookContent,'');assert.equal(body.linkedinContent,'');assert.equal(body.youtubeContent,'');
   assert.equal(body.videoFileId,'video-id');
+  // Verify the actual HTTP body too: the import node uses an explicit field map.
+  const expression = sheet.nodes.find(n=>n.name==='Lưu vào Content Manager PostgreSQL').parameters.jsonBody;
+  const requestBody = JSON.parse(new Function('$json', `return (${expression.slice(3, -2).trim()});`)(body));
+  assert.equal(requestBody.tiktokContent, 'Demo #epcb');
+  assert.equal(requestBody.postType, 'tiktok_video');
+  assert.equal(requestBody.videoFileId, 'video-id');
+  assert.equal(requestBody.facebookContent, '');
+  assert.equal(requestBody.youtubeContent, '');
 });
 
 test('TikTok platform infers video type; missing Drive video fails early',async()=>{
@@ -53,6 +61,22 @@ test('Facebook and YouTube Sheet normalization remains supported',async()=>{
   for(const [type,field,platform] of [['Facebook Reel','Video Reel','facebook'],['YouTube Short','Video Short','youtube'],['YouTube video thường','Video thường','youtube']]){
     const row=(await run(sheet,'Chuẩn hóa row và nền tảng',{'Loại nội dung':type,[field]:'https://drive.google.com/file/d/legacy-video/view'}))[0].json._row;
     assert.equal(row.platform,platform);assert.equal(row.video.fileId,'legacy-video');assert.equal(row.targetTikTok,false);
+  }
+});
+
+test('YouTube Short TikTok yes/no choice adds TikTok content only when enabled',async()=>{
+  const base={'Loại nội dung':'YouTube Short','Video Short':'https://drive.google.com/file/d/shared-video/view','Tiêu đề YouTube Short':'Mẹo EPCB','Mô tả YouTube Short':'Mẹo hữu ích'};
+  for (const [choice,expected] of [['Có',true],['Không',false]]) {
+    const row=(await run(sheet,'Chuẩn hóa row và nền tảng',{...base,'Đăng kèm nền tảng Tiktok':choice}))[0].json._row;
+    assert.equal(row.targetTikTok,expected,`TikTok target for ${choice}`);
+    assert.equal(row.targetYouTube,true);
+    assert.equal(row.video.fileId,'shared-video');
+    const parsed=(await run(sheet,'Parse JSON AI Final',{output:JSON.stringify({youtube:'YouTube copy',tiktok:'TikTok caption #EPCB',youtubeTitle:'Mẹo EPCB',youtubeDescription:'Mô tả'})},{'Chuẩn hóa row và nền tảng':{json:{_row:row}}}))[0].json;
+    const body=(await run(sheet,'Tạo payload PostgreSQL',parsed))[0].json;
+    assert.equal(body.youtubeContent,'YouTube copy');
+    assert.equal(body.tiktokContent,expected?'TikTok caption #EPCB':'');
+    assert.equal(body.postType,'youtube_short');
+    assert.equal(body.videoFileId,'shared-video');
   }
 });
 

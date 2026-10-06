@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Image as AntImage } from "antd";
 import Link from "next/link";
 import TikTokPostOptions from "@/app/content/TikTokPostOptions";
+import DeleteContentButton from "@/app/content/DeleteContentButton";
 import { validateTikTokPost } from "@/lib/tiktok";
 import { useRouter } from "next/navigation";
 import {
@@ -309,6 +310,11 @@ export default function Home() {
     });
   }
 
+  function onContentDeleted(id: string) {
+    setContents((current) => current.filter((item) => item.id !== id));
+    setSelectedId((current) => current === id ? null : current);
+  }
+
   function retryPost(contentId: string, postId: string) {
     updatePost(contentId, postId, {
       status: "scheduled",
@@ -324,6 +330,7 @@ export default function Home() {
         platform={platform}
         setPlatform={setPlatform}
         onBack={() => setSelectedId(null)}
+        onDeleted={onContentDeleted}
         updatePost={updatePost}
         approvePost={approvePost}
         schedulePost={schedulePost}
@@ -397,6 +404,7 @@ export default function Home() {
             query={query}
             setQuery={setQuery}
             retryPost={retryPost}
+            onDeleted={onContentDeleted}
           />
         )}
         {!loading && !loadError && view === "calendar" && (
@@ -692,11 +700,13 @@ function ContentList({
   query,
   setQuery,
   retryPost,
+  onDeleted,
 }: {
   contents: ContentItem[];
   query: string;
   setQuery: (value: string) => void;
   retryPost: (contentId: string, postId: string) => void;
+  onDeleted: (id: string) => void;
 }) {
   const router = useRouter();
 
@@ -736,6 +746,7 @@ function ContentList({
                   tabIndex={0}
                   onClick={() => router.push(`/content/${item.id}`)}
                   onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       router.push(`/content/${item.id}`);
@@ -776,28 +787,31 @@ function ContentList({
                     </span>
                   </td>
                   <td>
-                    {item.posts.find((post) => post.status === "failed") ? (
-                      <button
-                        className="secondary"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          const failedPost = item.posts.find(
-                            (post) => post.status === "failed",
-                          );
-                          if (failedPost) retryPost(item.id, failedPost.id);
-                        }}
-                      >
-                        Thử lại
-                      </button>
-                    ) : (
-                      <Link
-                        className="secondary"
-                        href={`/content/${item.id}`}
-                        onClick={(event) => event.stopPropagation()}
-                      >
-                        Mở bài
-                      </Link>
-                    )}
+                    <div className="content-row-actions">
+                      {item.posts.find((post) => post.status === "failed") ? (
+                        <button
+                          className="secondary"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const failedPost = item.posts.find(
+                              (post) => post.status === "failed",
+                            );
+                            if (failedPost) retryPost(item.id, failedPost.id);
+                          }}
+                        >
+                          Thử lại
+                        </button>
+                      ) : (
+                        <Link
+                          className="secondary"
+                          href={`/content/${item.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          Mở bài
+                        </Link>
+                      )}
+                      <DeleteContentButton content={item} title={getContentTitle(item)} onDeleted={onDeleted} />
+                    </div>
                   </td>
                 </tr>
               );
@@ -988,6 +1002,7 @@ export function DetailViewPro({
   platform,
   setPlatform,
   onBack,
+  onDeleted,
   updatePost,
   approvePost,
   schedulePost,
@@ -998,6 +1013,7 @@ export function DetailViewPro({
   platform: Platform;
   setPlatform: (platform: Platform) => void;
   onBack: () => void;
+  onDeleted: (id: string) => void;
   updatePost: (
     contentId: string,
     postId: string,
@@ -1055,7 +1071,7 @@ export function DetailViewPro({
 
   return (
     <div className="editor-page">
-      <header className="editor-header">
+      <header className="editor-header editor-header-with-actions">
         <div>
           <button className="editor-back" onClick={onBack}>
             <ArrowLeft size={16} /> Quay lại thư viện
@@ -1071,6 +1087,7 @@ export function DetailViewPro({
             </div>
           </div>
         </div>
+        <DeleteContentButton content={selected} title={getContentTitle(selected)} onDeleted={onDeleted} />
       </header>
       <div className="editor-layout">
         <aside className="editor-context">

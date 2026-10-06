@@ -3,6 +3,64 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+    return NextResponse.json(
+      { success: false, error: "Mã nội dung không hợp lệ." },
+      { status: 400 },
+    );
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Lock the parent and posts so scheduling cannot race with deletion.
+      const items = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM content_items WHERE id = ${id}::uuid FOR UPDATE
+      `;
+      if (!items.length) return "not_found";
+      const posts = await tx.$queryRaw<{ status: string }[]>`
+        SELECT status FROM social_posts WHERE content_id = ${id}::uuid FOR UPDATE
+      `;
+      // Only content whose every platform post is still a draft can be removed.
+      if (!posts.length || posts.some((post) => post.status !== "draft"))
+        return "not_draft";
+
+      // Keep the catalog history, but remove its reference to deleted content.
+      await tx.websiteProductPublication.updateMany({
+        where: { contentId: id },
+        data: { contentId: null },
+      });
+      // Schema cascades to social posts, media records, versions and publish logs.
+      await tx.contentItem.delete({ where: { id } });
+      return "deleted";
+    });
+
+    if (result === "not_found")
+      return NextResponse.json(
+        { success: false, error: "Nội dung không tồn tại hoặc đã được xoá." },
+        { status: 404 },
+      );
+    if (result === "not_draft")
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Chỉ có thể xoá nội dung khi tất cả bài trên các nền tảng đều là bản nháp.",
+        },
+        { status: 409 },
+      );
+    return NextResponse.json({ success: true, id });
+  } catch (error) {
+    console.error("Failed to delete content", error);
+    return NextResponse.json(
+      { success: false, error: "Không thể xoá nội dung. Vui lòng thử lại." },
+      { status: 500 },
+    );
+  }
+}
+
 function mediaUrl(fileUrl: string, kind: "image" | "video") {
   try {
     const url = new URL(fileUrl);
