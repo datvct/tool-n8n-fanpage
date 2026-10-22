@@ -1,0 +1,246 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const payload = $('Chuẩn hóa dữ liệu publish').first().json;\nconst media = Array.isArray(payload.media) ? payload.media : [];\nconst mediaUrls = Array.isArray(payload.mediaUrls) ? payload.mediaUrls : [];\nconst video = media.find((item) => String(item?.mimeType || '').startsWith('video/'))\n  || media.find((item) => item?.videoUrl || /video/i.test(String(item?.fileName || '')));\nif (!video) throw new Error('Missing YouTube video media');\n\n// media[].fileId / media[].id are app database IDs. Extract the Google Drive ID from its URL.\nconst sourceUrl = String(video.url || video.videoUrl || mediaUrls.find((url) => typeof url === 'string' && url.trim()) || '');\nlet videoFileId = '';\ntry {\n  videoFileId = new URL(sourceUrl).searchParams.get('id') || '';\n} catch {\n  const match = sourceUrl.match(/[?&]id=([^&]+)/);\n  videoFileId = match ? decodeURIComponent(match[1]) : '';\n}\nif (!videoFileId) throw new Error(`Google Drive file ID was not found in video URL: ${sourceUrl || '(empty URL)'}`);\n\nreturn {\n  json: {\n    ...payload,\n    video_file_id: videoFileId,\n    youtube_title: String(payload.title || 'EPCB Video').slice(0, 100),\n    youtube_description: payload.description || payload.content,\n  },\n};"
+      },
+      "id": "1326b990-3d47-494f-90f0-c1ac9e488413",
+      "name": "Prepare YouTube Video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -17248,
+        9168
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.video_file_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "c15d83f9-7d07-4f97-a853-91cb49c077fb",
+      "name": "Download YouTube Video",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -16944,
+        9152
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DDiQWQSWKeULTbxL",
+          "name": "Google Drive account datvct@epcb.vn"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Prepare YouTube Video').item.json.youtube_title }}",
+        "regionCode": "VN",
+        "categoryId": "28",
+        "binaryProperty": "data",
+        "options": {
+          "description": "={{ $('Prepare YouTube Video').item.json.youtube_description }}",
+          "notifySubscribers": true,
+          "privacyStatus": "public"
+        }
+      },
+      "id": "778b8756-1234-4cf9-b011-4c34dbf0e1a8",
+      "name": "Upload YouTube Video",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -16656,
+        9136
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "zR2Lgx8BRlBwU8X4",
+          "name": "YouTube account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'published', externalPostId: $json.id || $json.videoId || $json.uploadId || '', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "1b9b3135-bdac-4ef0-b691-8dadca4d4084",
+      "name": "Callback Backend Published YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16240,
+        9008
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "3ee3ab3f-184e-49ab-b179-ba899e69ae28",
+      "name": "Callback Backend Failed YouTube",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16160,
+        9408
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "a054c495-5045-4e10-a2d7-7ca12897ee96",
+      "name": "Callback Backend Failed Download YouTube Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16576,
+        9344
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/publish/callback",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-publish-key",
+              "value": "=epcb-publish-secret-2026"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ postId: $('Chuẩn hóa dữ liệu publish').first().json.postId, platform: 'youtube', status: 'failed', errorMessage: $json.error?.message || $json.message || 'YouTube publish failed', request: $('Chuẩn hóa dữ liệu publish').first().json, response: $json }) }}",
+        "options": {}
+      },
+      "id": "ca3ab8f2-d5c9-4849-8414-5ba513930b40",
+      "name": "Callback Backend Failed Prepare YouTube Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -16848,
+        9360
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Prepare YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Download YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Prepare YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Upload YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed Download YouTube Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload YouTube Video": {
+      "main": [
+        [
+          {
+            "node": "Callback Backend Published YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Callback Backend Failed YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  }
+}

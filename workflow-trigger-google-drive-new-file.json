@@ -1,0 +1,271 @@
+{
+  "name": "Google Drive - Tạo bản nháp YouTube Shorts từ video mới",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Chọn folder Google Drive sau khi import"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "d4cbe1dc-93b0-4d9e-af9a-259503ef09df",
+      "name": "Google Drive Trigger - File mới trong folder",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DDiQWQSWKeULTbxL",
+          "name": "Google Drive account datvct@epcb.vn"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileName = String($json.name || $json.fileName || '').trim();\nconst mimeType = String($json.mimeType || '').toLowerCase();\nconst supportedVideo = /\\.(mp4|mov|webm)$/i.test(fileName);\nconst isVideo = mimeType.startsWith('video/') || supportedVideo;\nconst topic = fileName.replace(/\\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();\nreturn [{ json: { ...$json, isVideo, topic, fileId: $json.id || $json.fileId, fileName } }];"
+      },
+      "id": "2934501e-b001-47a3-930f-c0b2b7bcb857",
+      "name": "Kiểm tra file video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.isVideo }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "id": "c73385db-3669-484a-9996-4deeb574e88a"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "794fd74f-517e-40a4-a523-d8135d620f45",
+      "name": "Có phải video?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Bạn là biên tập viên YouTube Shorts cho EPCB. Chỉ dựa trên tên video và dữ liệu được cung cấp; không bịa thông số, tính năng hay khẳng định về hình ảnh/âm thanh không được mô tả. Tạo tiêu đề YouTube hấp dẫn, rõ ràng, tối đa 100 ký tự; mô tả ngắn tiếng Việt có lời mời xem/tương tác và hashtag phù hợp; thêm nội dung bài đăng ngắn. Chỉ trả về JSON hợp lệ duy nhất theo schema {\"youtubeTitle\":\"\",\"youtubeDescription\":\"\",\"youtube\":\"\"}, không markdown."
+            },
+            {
+              "content": "={{ 'Tạo metadata và nội dung cho YouTube Short có tên: ' + $('Kiểm tra file video').item.json.topic + '. Tên file gốc: ' + $('Kiểm tra file video').item.json.fileName + '. Nội dung hình ảnh/lời thoại chưa được cung cấp, hãy tránh suy diễn.' }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "8b5af5de-a130-49ec-bf61-e6ce53d78885",
+      "name": "AI tạo nội dung YouTube Short",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        -80
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9MHUX2e2dWl9LzNK",
+          "name": "OpenAI account datvct"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ai = $input.first()?.json || {};\nconst texts = [];\nconst walk = (v,d=0) => { if(d>8||v==null)return; if(typeof v==='string'){if(v.trim())texts.push(v.trim());return;} if(Array.isArray(v)){v.forEach(x=>walk(x,d+1));return;} if(typeof v==='object')Object.values(v).forEach(x=>walk(x,d+1)); };\nwalk(ai);\nconst raw=texts.find(t=>t.includes('{'))||texts.sort((a,b)=>b.length-a.length)[0]||'';\nlet parsed={}; try{parsed=JSON.parse(raw)}catch{const s=raw.indexOf('{'),e=raw.lastIndexOf('}');if(s>=0&&e>s)try{parsed=JSON.parse(raw.slice(s,e+1))}catch{}}\nconst trigger=$('Google Drive Trigger - File mới trong folder').first().json;\nconst youtubeTitle=String(parsed.youtubeTitle||'').trim().slice(0,100);\nconst youtubeDescription=String(parsed.youtubeDescription||'').trim();\nconst youtubeContent=String(parsed.youtube||youtubeDescription).trim();\nif(!youtubeTitle||!youtubeDescription||!youtubeContent)throw new Error('AI chưa tạo đủ tiêu đề, mô tả hoặc nội dung YouTube.');\nreturn [{json:{sourceRowId:'google-drive-'+String(trigger.id),employeeName:'Google Drive',originalNote:'Video Drive: '+String(trigger.name||'').trim(),postType:'youtube_short',videoFileId:String(trigger.id),videoFileName:String(trigger.name||'video.mp4'),youtubeTitle,youtubeDescription,youtubeContent}}];"
+      },
+      "id": "12727b4a-5bfa-45dc-9c90-46a051b0571c",
+      "name": "Chuẩn bị bản nháp Content Manager",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/contents/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "=2ce3e492f751281be113952bea6ea028bcbf2a2f3e9c94bc"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "a892ca75-5d3e-40ca-9319-6313d5dc4c6a",
+      "name": "Tạo bản nháp YouTube Short trong Content Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "share",
+        "fileId": "={{ $(\"Kiểm tra file video\").item.json.fileId }}",
+        "permissionsUi": {
+          "permissionsValues": {
+            "role": "reader",
+            "type": "anyone"
+          }
+        },
+        "options": {}
+      },
+      "id": "68cd6128-7b93-4e08-8b79-dc4bb5e21da4",
+      "name": "Cho phép n8n tải video để đăng YouTube",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        700,
+        -80
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DDiQWQSWKeULTbxL",
+          "name": "Google Drive account datvct@epcb.vn"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Google Drive Trigger - File mới trong folder": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra file video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI tạo nội dung YouTube Short": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị bản nháp Content Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị bản nháp Content Manager": {
+      "main": [
+        [
+          {
+            "node": "Tạo bản nháp YouTube Short trong Content Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra file video": {
+      "main": [
+        [
+          {
+            "node": "Có phải video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Có phải video?": {
+      "main": [
+        [
+          {
+            "node": "Cho phép n8n tải video để đăng YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Cho phép n8n tải video để đăng YouTube": {
+      "main": [
+        [
+          {
+            "node": "AI tạo nội dung YouTube Short",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

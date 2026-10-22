@@ -24,8 +24,9 @@ export async function DELETE(
       const posts = await tx.$queryRaw<{ status: string }[]>`
         SELECT status FROM social_posts WHERE content_id = ${id}::uuid FOR UPDATE
       `;
-      // Only content whose every platform post is still a draft can be removed.
-      if (!posts.length || posts.some((post) => post.status !== "draft"))
+      // Drafts and failed posts can be cleaned up. Keep active or published posts safe.
+      const deletableStatuses = new Set(["draft", "failed"]);
+      if (posts.some((post) => !deletableStatuses.has(post.status)))
         return "not_draft";
 
       // Keep the catalog history, but remove its reference to deleted content.
@@ -47,7 +48,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: "Chỉ có thể xoá nội dung khi tất cả bài trên các nền tảng đều là bản nháp.",
+          error: "Chỉ có thể xoá nội dung khi tất cả bài đều là bản nháp hoặc thất bại. Bài đã duyệt, lên lịch, đang đăng hoặc đã đăng không thể xoá.",
         },
         { status: 409 },
       );

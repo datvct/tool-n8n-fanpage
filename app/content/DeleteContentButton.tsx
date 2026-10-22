@@ -14,7 +14,8 @@ export default function DeleteContentButton({ content, title, onDeleted }: {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const submitting = useRef(false);
-  const blocked = !content.posts.length || content.posts.some((post) => post.status !== "draft");
+  const deletableStatuses = new Set(["draft", "failed"]);
+  const blocked = content.posts.some((post) => !deletableStatuses.has(post.status));
 
   async function confirmDelete() {
     if (submitting.current || blocked) return;
@@ -42,14 +43,14 @@ export default function DeleteContentButton({ content, title, onDeleted }: {
       className="delete-content-control"
       onClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}
-      title={blocked ? "Chỉ xoá được nội dung khi tất cả bài trên các nền tảng đều là bản nháp." : undefined}
+      title={blocked ? "Không thể xoá nội dung có bài đã duyệt, lên lịch hoặc đã đăng." : undefined}
     >
       <button
         type="button"
         className="secondary delete-content-button"
         disabled={blocked || deleting}
         aria-label={`Xoá nội dung: ${title}`}
-        title={blocked ? "Chỉ xoá được nội dung khi tất cả bài trên các nền tảng đều là bản nháp." : "Xoá bản nháp"}
+        title={blocked ? "Không thể xoá nội dung có bài đã duyệt, lên lịch hoặc đã đăng." : "Xoá nội dung"}
         onClick={() => { setError(""); setOpen(true); }}
       >
         <Trash2 size={16} aria-hidden="true" />
@@ -59,7 +60,7 @@ export default function DeleteContentButton({ content, title, onDeleted }: {
         open={open}
         onOk={() => void confirmDelete()}
         onCancel={() => { if (!submitting.current) setOpen(false); }}
-        okText="Xoá bản nháp"
+        okText="Xoá nội dung"
         cancelText="Giữ lại"
         confirmLoading={deleting}
         okButtonProps={{ danger: true, disabled: blocked }}
@@ -72,7 +73,7 @@ export default function DeleteContentButton({ content, title, onDeleted }: {
         <p className="delete-content-title">{title}</p>
         <p>Nội dung và các bản nháp trên mọi nền tảng cùng lịch sử trong ứng dụng sẽ bị xoá vĩnh viễn.</p>
         <p className="delete-content-note">File trên Google Drive và bài đã đăng trên mạng xã hội vẫn được giữ nguyên.</p>
-        {blocked && <p className="modal-error" role="alert">Chỉ xoá được nội dung khi tất cả bài trên các nền tảng đều đang ở trạng thái bản nháp. Bài đã duyệt, lên lịch, đang đăng, đã đăng hoặc lỗi đều không thể xoá.</p>}
+        {blocked && <p className="modal-error" role="alert">Chỉ xoá được nội dung khi tất cả bài đều là bản nháp hoặc thất bại. Bài đã duyệt, lên lịch, đang đăng hoặc đã đăng sẽ được giữ lại.</p>}
         {error && <p className="modal-error" role="alert">{error}</p>}
       </Modal>
     </span>

@@ -1,0 +1,274 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "edfc85bc-9b84-4f88-a832-98aa6f2b59ff",
+      "name": "Schedule Trigger - Mỗi 1 giờ",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        704,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(({ json }) => {\n  const fileName = String(json.name || json.fileName || '').trim();\n  const mimeType = String(json.mimeType || '').toLowerCase();\n  const supportedVideo = /\\.(mp4|mov|m4v|webm|avi)$/i.test(fileName);\n  const isVideo = mimeType.startsWith('video/') || supportedVideo;\n  const topic = fileName.replace(/\\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();\n\n  return {\n    json: {\n      ...json,\n      isVideo,\n      topic,\n      fileId: json.id || json.fileId,\n      fileName,\n    },\n  };\n});"
+      },
+      "id": "60fc761f-fce0-4acc-902e-5d59eca5ae12",
+      "name": "Kiểm tra file video",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        944,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.isVideo }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "id": "c73385db-3669-484a-9996-4deeb574e88a"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "adb81b36-51be-4e1e-8c7f-41cfb7edfa92",
+      "name": "Có phải video?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        800
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=Bạn là biên tập viên YouTube Shorts cho EPCB. Chỉ dựa trên tên video và dữ liệu được cung cấp; không bịa thông số, tính năng hay khẳng định về hình ảnh/âm thanh không được mô tả. Tạo tiêu đề YouTube hấp dẫn, rõ ràng, tối đa 100 ký tự; mô tả ngắn tiếng Việt có lời mời xem/tương tác và hashtag phù hợp; thêm nội dung bài đăng ngắn. Chỉ trả về JSON hợp lệ duy nhất theo schema {\"youtubeTitle\":\"\",\"youtubeDescription\":\"\",\"youtube\":\"\"}, không markdown."
+            },
+            {
+              "content": "={{ 'Tạo metadata và nội dung cho YouTube Short có tên: ' + $json.topic + '. Tên file gốc: ' + $json.fileName + '. Nội dung hình ảnh/lời thoại chưa được cung cấp, hãy tránh suy diễn.' }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "42ce2a20-6d2b-4eb1-94b0-d37963fb940a",
+      "name": "AI tạo nội dung YouTube Short",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        1424,
+        720
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "9MHUX2e2dWl9LzNK",
+          "name": "OpenAI account datvct"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const ai = $json || {};\nconst texts = [];\n\nconst walk = (value, depth = 0) => {\n  if (depth > 8 || value == null) return;\n  if (typeof value === 'string') {\n    if (value.trim()) texts.push(value.trim());\n    return;\n  }\n  if (Array.isArray(value)) {\n    value.forEach((item) => walk(item, depth + 1));\n    return;\n  }\n  if (typeof value === 'object') {\n    Object.values(value).forEach((item) => walk(item, depth + 1));\n  }\n};\n\nwalk(ai);\nconst raw = texts.find((text) => text.includes('{')) || texts.sort((a, b) => b.length - a.length)[0] || '';\nlet parsed = {};\ntry {\n  parsed = JSON.parse(raw);\n} catch {\n  const start = raw.indexOf('{');\n  const end = raw.lastIndexOf('}');\n  if (start >= 0 && end > start) {\n    try { parsed = JSON.parse(raw.slice(start, end + 1)); } catch {}\n  }\n}\n\nconst file = $('Google Drive - Quét file trong folder').item.json;\nconst youtubeTitle = String(parsed.youtubeTitle || '').trim().slice(0, 100);\nconst youtubeDescription = String(parsed.youtubeDescription || '').trim();\nconst youtubeContent = String(parsed.youtube || youtubeDescription).trim();\nif (!youtubeTitle || !youtubeDescription || !youtubeContent) {\n  throw new Error(`AI chưa tạo đủ nội dung cho file: ${file.name || file.id}`);\n}\n\nreturn {\n  json: {\n    sourceRowId: `google-drive-${String(file.id)}`,\n    employeeName: 'Google Drive',\n    originalNote: `Video Drive: ${String(file.name || '').trim()}`,\n    postType: 'youtube_short',\n    videoFileId: String(file.id),\n    videoFileName: String(file.name || 'video.mp4'),\n    youtubeTitle,\n    youtubeDescription,\n    youtubeContent,\n  },\n};"
+      },
+      "id": "e754a8bb-171e-4174-9089-9a62bd71aeae",
+      "name": "Chuẩn bị bản nháp Content Manager",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://content.epcb2.espitek.com/api/contents/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-n8n-key",
+              "value": "=2ce3e492f751281be113952bea6ea028bcbf2a2f3e9c94bc"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "136f9552-da82-4a82-9639-75532cab87af",
+      "name": "Tạo bản nháp YouTube Short trong Content Manager",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2160,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "searchMethod": "query",
+        "queryString": "trashed = false",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1VogT1GvVjsr894QiluRqhZ8wUmB-F0GM",
+            "mode": "list",
+            "cachedResultName": "EPCB - IOT Sensor",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1VogT1GvVjsr894QiluRqhZ8wUmB-F0GM"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name",
+            "mimeType",
+            "modifiedTime"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        944,
+        800
+      ],
+      "id": "61819360-c6a9-470b-856e-89c9edbf2513",
+      "name": "Google Drive - Quét file trong folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "DDiQWQSWKeULTbxL",
+          "name": "Google Drive account datvct@epcb.vn"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Mỗi 1 giờ": {
+      "main": [
+        [
+          {
+            "node": "Google Drive - Quét file trong folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive - Quét file trong folder": {
+      "main": [
+        [
+          {
+            "node": "Kiểm tra file video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kiểm tra file video": {
+      "main": [
+        [
+          {
+            "node": "Có phải video?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Có phải video?": {
+      "main": [
+        [
+          {
+            "node": "AI tạo nội dung YouTube Short",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI tạo nội dung YouTube Short": {
+      "main": [
+        [
+          {
+            "node": "Chuẩn bị bản nháp Content Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chuẩn bị bản nháp Content Manager": {
+      "main": [
+        [
+          {
+            "node": "Tạo bản nháp YouTube Short trong Content Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f9e11548604ed2a425cfc9d3fd801a1bf95d2bdd70c4b69caae6413fd826fb7"
+  },
+  "name": "Google Drive - Quét video mỗi giờ và tạo bản nháp YouTube Shorts",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Ho_Chi_Minh"
+  }
+}
