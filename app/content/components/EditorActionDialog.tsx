@@ -15,7 +15,23 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
   const defaultDate = vietnamDateInputValue(new Date(Date.now() + 86400000));
   const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState("09:30");
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
+  const [draftHour, setDraftHour] = useState("09");
+  const [draftMinute, setDraftMinute] = useState("30");
   const [error, setError] = useState("");
+
+  function openTimePicker() {
+    const [hour, minute] = time.split(":");
+    setDraftHour(hour || "09");
+    setDraftMinute(minute || "30");
+    setTimePickerOpen(true);
+  }
+
+  function confirmTime() {
+    setTime(`${draftHour}:${draftMinute}`);
+    setTimePickerOpen(false);
+    setError("");
+  }
 
   function confirmSchedule() {
     const value = new Date(`${date}T${time}:00+07:00`);
@@ -43,7 +59,40 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
           <p>Chọn thời gian đăng cho bài {platformLabels[platform]}.</p>
           <div className="schedule-fields">
             <label>Ngày đăng<input type="date" min={vietnamDateInputValue()} value={date} onChange={(event) => setDate(event.target.value)} /></label>
-            <label>Giờ đăng<input type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label>
+            <div className="schedule-time-field"><span>Giờ đăng</span>
+              <button
+                className="time-picker-trigger"
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={timePickerOpen}
+                onClick={() => timePickerOpen ? setTimePickerOpen(false) : openTimePicker()}
+              >
+                <span>{time}</span>
+                <CalendarClock size={15} aria-hidden="true" />
+              </button>
+              {timePickerOpen && (
+                <div className="time-picker-popover" role="dialog" aria-label="Chọn giờ đăng">
+                  <div className="time-picker-selects">
+                    <label>Giờ
+                      <select aria-label="Giờ đăng" value={draftHour} onChange={(event) => setDraftHour(event.target.value)}>
+                        {Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0")).map((hour) => (
+                          <option key={hour} value={hour}>{hour}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <span className="time-picker-colon">:</span>
+                    <label>Phút
+                      <select aria-label="Phút đăng" value={draftMinute} onChange={(event) => setDraftMinute(event.target.value)}>
+                        {Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0")).map((minute) => (
+                          <option key={minute} value={minute}>{minute}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <button className="time-picker-confirm" type="button" onClick={confirmTime}>OK</button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="timezone-note"><CalendarDays size={14} /> Múi giờ: Asia/Ho_Chi_Minh</div>
           {error && <p className="modal-error" role="alert">{error}</p>}
