@@ -18,6 +18,7 @@ function cleanFormText(value: string) {
 
 export function EditorContextPanel({ content }: { content: ContentItem }) {
   const [expanded, setExpanded] = useState(false);
+  const note = cleanFormText(content.note ?? "").trim();
 
   return (
         <aside className="editor-context">
@@ -25,18 +26,20 @@ export function EditorContextPanel({ content }: { content: ContentItem }) {
             <div className="context-heading">
               <FileText size={16} />
               <span>Thông tin công việc</span>
-              <button
-                className="context-expand"
-                type="button"
-                aria-expanded={expanded}
-                onClick={() => setExpanded((current) => !current)}
-              >
-                {expanded ? "Thu gọn" : "Xem đầy đủ"}
-                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
+              {note && (
+                <button
+                  className="context-expand"
+                  type="button"
+                  aria-expanded={expanded}
+                  onClick={() => setExpanded((current) => !current)}
+                >
+                  {expanded ? "Thu gọn" : "Xem đầy đủ"}
+                  {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
+              )}
             </div>
-            <div className={`context-note${expanded ? " expanded" : ""}`}>
-              {cleanFormText(content.note)}
+            <div className={`context-note${expanded ? " expanded" : ""}${note ? "" : " empty"}`}>
+              {note || "Không có ghi chú từ Google Form."}
             </div>
           </section>
           <section className="context-section context-media-section">
