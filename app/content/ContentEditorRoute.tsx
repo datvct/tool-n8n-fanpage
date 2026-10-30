@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Spin } from "antd";
-import { DetailViewPro } from "@/app/page";
-import type { ContentItem, Platform, SocialPost } from "@/lib/content-types";
+import { ContentEditor } from "@/app/content/components/ContentEditor";
+import type { ContentItem, Platform, PostType, SocialPost } from "@/lib/content-types";
 
 export default function ContentEditorRoute({ id }: { id: string }) {
   const [content, setContent] = useState<ContentItem | null>(null);
   const [platform, setPlatform] = useState<Platform>("facebook");
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -25,22 +24,48 @@ export default function ContentEditorRoute({ id }: { id: string }) {
       );
   }, [id]);
 
-  function updatePost(_contentId: string, postId: string, update: Partial<SocialPost>) {
+  async function updatePost(_contentId: string, postId: string, update: Partial<SocialPost>): Promise<boolean> {
     setContent((current) =>
       current
         ? { ...current, posts: current.posts.map((post) => post.id === postId ? { ...post, ...update } : post) }
         : current,
     );
-    void fetch(`/api/social-posts/${postId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(update),
-    }).then(async (response) => {
+    try {
+      const response = await fetch(`/api/social-posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(update),
+      });
       if (!response.ok) {
         const result = await response.json().catch(() => null);
         setError(result?.error || "Không thể lưu thay đổi.");
+        return false;
       }
-    }).catch(() => setError("Không thể kết nối để lưu thay đổi. Hãy tải lại trang trước khi tiếp tục."));
+      return true;
+    } catch {
+      setError("Không thể kết nối để lưu thay đổi. Hãy tải lại trang trước khi tiếp tục.");
+      return false;
+    }
+  }
+
+  async function createPlatformPost(
+    contentId: string,
+    targetPlatform: Platform,
+    postType: PostType,
+    postContent: string,
+  ) {
+    const response = await fetch(`/api/contents/${contentId}/posts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform: targetPlatform, postType, content: postContent }),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.success)
+      throw new Error(result?.error || "Không thể thêm nền tảng đăng bài.");
+    const newPost = result.data as SocialPost;
+    setContent((current) => current && !current.posts.some((post) => post.platform === targetPlatform)
+      ? { ...current, posts: [...current.posts, newPost] }
+      : current);
   }
 
   function approvePost() {
@@ -56,5 +81,5 @@ export default function ContentEditorRoute({ id }: { id: string }) {
   if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
   if (!content) return <main className="shared-page"><Spin size="large" /></main>;
 
-  return <>{error && <div className="shared-error" role="alert">{error}</div>}<DetailViewPro selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} onDeleted={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} saved={saved} setSaved={setSaved} /></>;
+  return <>{error && <div className="shared-error" role="alert">{error}</div>}<ContentEditor selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} onDeleted={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} createPlatformPost={createPlatformPost} /></>;
 }

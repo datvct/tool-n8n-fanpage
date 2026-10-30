@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./content/content-workspace.css";
 
 export const metadata: Metadata = {
   title: "Content Flow | Quản lý nội dung",

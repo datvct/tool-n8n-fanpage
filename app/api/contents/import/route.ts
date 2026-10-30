@@ -145,11 +145,15 @@ export async function POST(request: NextRequest) {
 
   const existing = await prisma.contentItem.findUnique({
     where: { source_sourceRowId: { source: "google_sheet", sourceRowId } },
-    include: { socialPosts: true },
+    include: { socialPosts: true, media: true },
   });
   if (existing?.socialPosts.some((post) => post.platform === "tiktok" && ["approved", "scheduled", "publishing", "published"].includes(post.status)))
     return errorResponse("TIKTOK_POST_LOCKED", "Không thể nhập lại nội dung hoặc video của bài TikTok đã duyệt hoặc đã gửi đăng.", 409);
+  if (existing?.socialPosts.some((post) => ["scheduled", "publishing", "published"].includes(post.status)))
+    return errorResponse("CONTENT_POST_LOCKED", "Không thể nhập đè nội dung đã lên lịch, đang đăng hoặc đã đăng. Hãy tạo một mục nội dung mới nếu cần đăng phiên bản khác.", 409);
   if (existing) {
+    const mediaChanged = JSON.stringify(existing.media.map((asset) => asset.fileUrl).sort()) !==
+      JSON.stringify(media.map((asset) => asset.fileUrl).sort());
     const updated = await prisma.$transaction(async (tx) => {
       await tx.contentItem.update({
         where: { id: existing.id },
@@ -174,12 +178,21 @@ export async function POST(request: NextRequest) {
         const current = existing.socialPosts.find(
           (item) => item.platform === post.platform,
         );
-        if (current)
+        if (current) {
+          const postChanged = current.postType !== postData.postType ||
+            current.content !== postData.content ||
+            current.title !== postData.title ||
+            current.description !== postData.description ||
+            mediaChanged;
+          const needsReview = postChanged && ["approved", "failed", "cancelled"].includes(current.status);
           await tx.socialPost.update({
             where: { id: current.id },
-            data: postData,
+            data: {
+              ...postData,
+              ...(needsReview ? { status: "draft" as const, scheduledAt: null, errorMessage: null } : {}),
+            },
           });
-        else
+        } else
           await tx.socialPost.create({
             data: { ...postData, contentId: existing.id },
           });

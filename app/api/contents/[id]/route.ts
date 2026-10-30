@@ -77,6 +77,12 @@ function isVideo(fileName: string, mimeType: string | null) {
   return mimeType?.startsWith("video/") || /\.(mp4|mov|m4v|webm|avi)$/i.test(fileName);
 }
 
+function toUiStatus(status: string) {
+  if (status === "publishing") return "scheduled";
+  if (status === "cancelled") return "failed";
+  return status;
+}
+
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
@@ -117,7 +123,7 @@ export async function GET(
           title: post.title ?? undefined,
           description: post.description ?? undefined,
           tiktokOptions: post.tiktokOptions,
-        status: post.status,
+        status: toUiStatus(post.status),
         scheduledAt: post.scheduledAt?.toISOString(),
         publishedAt: post.publishedAt?.toISOString(),
         error: post.errorMessage ?? undefined,

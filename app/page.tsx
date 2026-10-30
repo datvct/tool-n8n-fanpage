@@ -1,12 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Image as AntImage } from "antd";
-import Link from "next/link";
-import TikTokPostOptions from "@/app/content/TikTokPostOptions";
-import DeleteContentButton from "@/app/content/DeleteContentButton";
-import { validateTikTokPost } from "@/lib/tiktok";
-import { useRouter } from "next/navigation";
 import {
   ContentItem,
   Platform,
@@ -14,182 +8,17 @@ import {
   SocialPost,
   ContentStatus,
 } from "@/lib/content-types";
-import {
-  ArrowLeft,
-  CalendarClock,
-  CalendarDays,
-  Check,
-  CircleAlert,
-  CircleCheck,
-  Eye,
-  FileText,
-  Image as ImageIcon,
-  LayoutDashboard,
-  Library,
-  MoreHorizontal,
-  Plus,
-  RefreshCw,
-  Save,
-} from "lucide-react";
+import { CircleAlert, RefreshCw } from "lucide-react";
+import { ContentSidebar } from "@/app/content/components/ContentSidebar";
+import { DashboardSkeleton } from "@/app/content/components/DashboardSkeleton";
+import { DashboardView } from "@/app/content/components/DashboardView";
+import { ContentListView } from "@/app/content/components/ContentListView";
+import { ContentEditor } from "@/app/content/components/ContentEditor";
+import { PostListView } from "@/app/content/components/PostListView";
+import { CalendarView } from "@/app/content/components/CalendarView";
+import { WorkspaceHeader } from "@/app/content/components/WorkspaceHeader";
+import { getContentTitle, getOverallStatus, viewTitle, type View } from "@/app/content/ui/content-presentation";
 
-const statusLabels: Record<ContentStatus, string> = {
-  draft: "Bản nháp",
-  approved: "Đã duyệt",
-  scheduled: "Đã lên lịch",
-  published: "Đã đăng",
-  failed: "Thất bại",
-};
-const platformLabels: Record<Platform, string> = {
-  facebook: "Facebook",
-  linkedin: "LinkedIn",
-  youtube: "YouTube",
-  tiktok: "TikTok",
-};
-const postTypeLabels: Record<PostType, string> = {
-  post: "Bài viết thường",
-  facebook_reel: "Facebook Reel",
-  youtube_short: "YouTube Short",
-  youtube_video: "YouTube video thường",
-  tiktok_video: "TikTok Video",
-};
-const VIETNAM_TIME_ZONE = "Asia/Ho_Chi_Minh";
-
-function formatVietnamDateTime(value?: string | Date) {
-  if (!value) return "—";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: VIETNAM_TIME_ZONE,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function formatVietnamDate(value?: string | Date) {
-  if (!value) return "—";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: VIETNAM_TIME_ZONE,
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
-}
-
-function formatVietnamTime(value?: string | Date) {
-  if (!value) return "—";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: VIETNAM_TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function formatVietnamDay(value?: string | Date) {
-  if (!value) return "—";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: VIETNAM_TIME_ZONE,
-    day: "2-digit",
-  }).format(date);
-}
-
-function formatVietnamMonth(value?: string | Date) {
-  if (!value) return "—";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("vi-VN", {
-    timeZone: VIETNAM_TIME_ZONE,
-    month: "2-digit",
-  }).format(date);
-}
-
-function vietnamDateInputValue(date = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: VIETNAM_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-}
-
-function vietnamMonthStart(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: VIETNAM_TIME_ZONE,
-    year: "numeric",
-    month: "numeric",
-  }).formatToParts(date);
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  return new Date(year, month - 1, 1);
-}
-
-function isImageSource(value: string) {
-  return value.startsWith("http") || value.startsWith("/api/media");
-}
-
-function isVideoSource(value: string) {
-  return value.startsWith("http") || value.startsWith("/api/media");
-}
-
-function truncateText(value: string, maxLength: number) {
-  const text = value.trim();
-  return text.length > maxLength
-    ? `${text.slice(0, maxLength).trimEnd()}...`
-    : text;
-}
-
-function getPostDisplayTitle(post: SocialPost, fallback = "Chưa có tiêu đề") {
-  const title = post.platform === "youtube" ? post.title?.trim() : "";
-  return title || post.content.trim() || fallback;
-}
-
-function getContentPlatforms(item: ContentItem) {
-  return (
-    [
-      ...new Set(
-        item.posts.map((post) =>
-          post.postType === "post"
-            ? platformLabels[post.platform]
-            : postTypeLabels[post.postType],
-        ),
-      ),
-    ].join(" · ") || "Chưa chọn nền tảng"
-  );
-}
-
-function getPostChannelLabel(post: SocialPost) {
-  return post.postType === "post"
-    ? platformLabels[post.platform]
-    : postTypeLabels[post.postType];
-}
-
-function getContentTitle(item: ContentItem) {
-  const firstPost = item.posts.find(
-    (post) => post.content.trim() || post.title?.trim(),
-  );
-  return firstPost
-    ? getPostDisplayTitle(firstPost, item.note || "Chưa có tiêu đề")
-    : item.note || "Chưa có tiêu đề";
-}
-
-function getOverallStatus(item: ContentItem): ContentStatus {
-  const statuses = item.posts.map((post) => post.status);
-  if (statuses.includes("failed")) return "failed";
-  if (statuses.length > 0 && statuses.every((status) => status === "published"))
-    return "published";
-  if (statuses.includes("scheduled")) return "scheduled";
-  if (statuses.includes("approved")) return "approved";
-  return "draft";
-}
-
-type View = "dashboard" | "contents" | "calendar" | "published" | "failed";
 
 export default function Home() {
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -199,7 +28,8 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [platform, setPlatform] = useState<Platform>("facebook");
   const [query, setQuery] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
+  const [retryingPostId, setRetryingPostId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
@@ -245,6 +75,7 @@ export default function Home() {
   const counts = {
     total: contents.length,
     draft: allPosts.filter((post) => post.status === "draft").length,
+    approved: allPosts.filter((post) => post.status === "approved").length,
     scheduled: allPosts.filter((post) => post.status === "scheduled").length,
     published: allPosts.filter((post) => post.status === "published").length,
     failed: allPosts.filter((post) => post.status === "failed").length,
@@ -260,11 +91,11 @@ export default function Home() {
     [contents, query],
   );
 
-  function updatePost(
+  async function updatePost(
     contentId: string,
     postId: string,
     update: Partial<SocialPost>,
-  ) {
+  ): Promise<boolean> {
     setContents((current) =>
       current.map((item) =>
         item.id !== contentId
@@ -277,17 +108,47 @@ export default function Home() {
             },
       ),
     );
-    void fetch(`/api/social-posts/${postId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(update),
-    }).then(async (response) => {
+    try {
+      const response = await fetch(`/api/social-posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(update),
+      });
       if (!response.ok) {
         const result = await response.json().catch(() => null);
         setLoadError(result?.error || "Không thể lưu thay đổi.");
         void loadContents();
+        return false;
       }
+      return true;
+    } catch {
+      setLoadError("Không thể kết nối để lưu thay đổi.");
+      void loadContents();
+      return false;
+    }
+  }
+
+  async function createPlatformPost(
+    contentId: string,
+    targetPlatform: Platform,
+    postType: PostType,
+    content: string,
+  ) {
+    const response = await fetch(`/api/contents/${contentId}/posts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ platform: targetPlatform, postType, content }),
     });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !result?.success)
+      throw new Error(result?.error || "Không thể thêm nền tảng đăng bài.");
+
+    const newPost = result.data as SocialPost;
+    setContents((current) => current.map((item) =>
+      item.id === contentId && !item.posts.some((post) => post.platform === targetPlatform)
+        ? { ...item, posts: [...item.posts, newPost] }
+        : item,
+    ));
   }
 
   function approvePost() {
@@ -315,1422 +176,114 @@ export default function Home() {
     setSelectedId((current) => current === id ? null : current);
   }
 
-  function retryPost(contentId: string, postId: string) {
-    updatePost(contentId, postId, {
-      status: "scheduled",
-      scheduledAt: new Date(Date.now() + 60_000).toISOString(),
-      error: undefined,
-    });
+  function openContent(contentId: string, targetPlatform?: Platform) {
+    const item = contents.find((content) => content.id === contentId);
+    const requestedPlatform = targetPlatform && item?.posts.some((post) => post.platform === targetPlatform)
+      ? targetPlatform
+      : item?.posts[0]?.platform;
+    if (requestedPlatform) setPlatform(requestedPlatform);
+    setSelectedId(contentId);
   }
 
-  if (selected)
-    return (
-      <DetailViewPro
-        selected={selected}
-        platform={platform}
-        setPlatform={setPlatform}
-        onBack={() => setSelectedId(null)}
-        onDeleted={onContentDeleted}
-        updatePost={updatePost}
-        approvePost={approvePost}
-        schedulePost={schedulePost}
-        saved={saved}
-        setSaved={setSaved}
-      />
-    );
+  async function retryPost(contentId: string, postId: string) {
+    if (retryingPostId) return;
+    setRetryingPostId(postId);
+    try {
+      await updatePost(contentId, postId, {
+        status: "scheduled",
+        scheduledAt: new Date(Date.now() + 60_000).toISOString(),
+        error: undefined,
+      });
+    } finally {
+      setRetryingPostId(null);
+    }
+  }
 
   return (
     <div className="shell">
-      <SidebarPro view={view} setView={setView} failedCount={counts.failed} />
+      <ContentSidebar
+        view={view}
+        setView={(nextView) => { setSelectedId(null); setView(nextView); }}
+        failedCount={counts.failed}
+      />
       <main className="main">
-        <header className="topbar">
-          <div className="heading-block">
-            <div className="eyebrow">
-              Vận hành nội dung <span>/</span> Tháng 09, 2026
-            </div>
-            <h1>
-              {view === "dashboard" ? "Xin chào, đội ngũ" : viewTitle(view)}
-            </h1>
-            <p className="subtle">
-              Tạo, duyệt và lên lịch nội dung mạng xã hội trong một nơi.
-            </p>
-          </div>
-          <div className="header-actions">
-            <button
-              className="secondary refresh-button"
-              onClick={refreshContents}
-              disabled={refreshing || loading}
-              title="Tải lại dữ liệu từ database"
-            >
-              <RefreshCw size={15} className={refreshing ? "spin" : ""} />
-              Làm mới
+        <WorkspaceHeader
+          title={selected ? "Chi tiết bài viết" : view === "dashboard" ? "Xin chào, đội ngũ" : viewTitle(view)}
+          description={selected ? `${selected.employee} · ${getContentTitle(selected)}` : "Tạo, duyệt và lên lịch nội dung mạng xã hội trong một nơi."}
+          refreshing={refreshing}
+          loading={loading}
+          lastSyncedAt={lastSyncedAt}
+          onRefresh={refreshContents}
+          compact={Boolean(selected)}
+        />
+        {!selected && loading && <DashboardSkeleton />}
+        {!selected && !loading && loadError && (
+          <div className="load-error" role="alert">
+            <CircleAlert size={18} />
+            <span>{loadError}</span>
+            <button className="secondary" onClick={refreshContents} disabled={refreshing}>
+              <RefreshCw size={14} className={refreshing ? "spin" : ""} /> Thử lại
             </button>
-            <div className="sync-pill">
-              <span className="online-dot" /> n8n đang hoạt động
-            </div>
-            <a
-              className="primary"
-              href={
-                process.env.NEXT_PUBLIC_GOOGLE_FORM_URL ||
-                "https://forms.gle/Yqc51w1LRuoSrTLV9"
-              }
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span className="button-icon">+</span> Nội dung mới
-            </a>
-          </div>
-        </header>
-        {lastSyncedAt && !loading && (
-          <div className="sync-meta">
-            Cập nhật lúc{" "}
-            {lastSyncedAt.toLocaleTimeString("vi-VN", {
-              timeZone: VIETNAM_TIME_ZONE,
-            })}
           </div>
         )}
-        {loading && <p className="subtle">Đang tải dữ liệu từ database...</p>}
-        {!loading && loadError && (
-          <p className="subtle" style={{ color: "var(--red-ink)" }}>
-            {loadError}
-          </p>
+        {selected && loadError && (
+          <div className="load-error" role="alert">
+            <CircleAlert size={18} />
+            <span>{loadError}</span>
+            <button className="secondary" onClick={refreshContents} disabled={refreshing}>
+              <RefreshCw size={14} className={refreshing ? "spin" : ""} /> Tải lại
+            </button>
+          </div>
         )}
-        {!loading && !loadError && view === "dashboard" && (
-          <Dashboard counts={counts} contents={contents} />
+        {!loading && !loadError && selected && (
+          <ContentEditor
+            selected={selected}
+            platform={platform}
+            setPlatform={setPlatform}
+            onBack={() => setSelectedId(null)}
+            onDeleted={onContentDeleted}
+            updatePost={updatePost}
+            approvePost={approvePost}
+            schedulePost={schedulePost}
+            createPlatformPost={createPlatformPost}
+          />
         )}
-        {!loading && !loadError && view === "contents" && (
-          <ContentList
+        {!selected && !loading && !loadError && view === "dashboard" && (
+          <DashboardView counts={counts} contents={contents} setView={setView} setStatusFilter={setStatusFilter} setQuery={setQuery} onOpen={openContent} />
+        )}
+        {!selected && !loading && !loadError && view === "contents" && (
+          <ContentListView
             contents={filtered}
             query={query}
             setQuery={setQuery}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
             retryPost={retryPost}
+            retryingPostId={retryingPostId}
             onDeleted={onContentDeleted}
+            onOpen={openContent}
           />
         )}
-        {!loading && !loadError && view === "calendar" && (
-          <Calendar posts={allPosts} />
+        {!selected && !loading && !loadError && view === "calendar" && (
+          <CalendarView posts={allPosts} onOpen={openContent} />
         )}
-        {!loading && !loadError && view === "published" && (
-          <PostList
+        {!selected && !loading && !loadError && view === "published" && (
+          <PostListView
             title="Bài đã đăng"
             posts={allPosts.filter((post) => post.status === "published")}
+            onOpen={openContent}
           />
         )}
-        {!loading && !loadError && view === "failed" && (
-          <PostList
+        {!selected && !loading && !loadError && view === "failed" && (
+          <PostListView
             title="Bài đăng lỗi"
             posts={allPosts.filter((post) => post.status === "failed")}
             retryPost={retryPost}
+            retryingPostId={retryingPostId}
+            onOpen={openContent}
           />
         )}
       </main>
     </div>
-  );
-}
-
-function viewTitle(view: View) {
-  return {
-    dashboard: "Tổng quan",
-    contents: "Thư viện nội dung",
-    calendar: "Lịch đăng bài",
-    published: "Bài đã đăng",
-    failed: "Bài đăng lỗi",
-  }[view];
-}
-
-function Sidebar({
-  view,
-  setView,
-}: {
-  view: View;
-  setView: (view: View) => void;
-}) {
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-logo">
-          <img src="/images/logo.png" alt="Content Flow" />
-        </div>
-        <div>
-          <strong>EPCB</strong>
-          <span>Social workspace</span>
-        </div>
-      </div>
-      <div className="workspace-label">KHÔNG GIAN LÀM VIỆC</div>
-      <nav className="nav">
-        {(
-          ["dashboard", "contents", "calendar", "published", "failed"] as View[]
-        ).map((item) => (
-          <button
-            className={view === item ? "active" : ""}
-            key={item}
-            onClick={() => setView(item)}
-          >
-            <span className={`nav-icon nav-${item}`} />
-            {
-              {
-                dashboard: "Tổng quan",
-                contents: "Thư viện nội dung",
-                calendar: "Lịch đăng bài",
-                published: "Bài đã đăng",
-                failed: "Bài đăng lỗi",
-              }[item]
-            }
-            {item === "failed" && <span className="nav-count">1</span>}
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-bottom">
-        <div className="automation-card">
-          <div className="automation-title">
-            <span className="online-dot" /> Tự động hóa
-          </div>
-          <p>n8n đang kiểm tra lịch đăng mỗi phút.</p>
-          <span className="automation-link">
-            Đã kết nối tốt <b>→</b>
-          </span>
-        </div>
-        <div className="user-chip">
-          <div className="avatar">AD</div>
-          <div>
-            <strong>Admin</strong>
-            <span>Quản trị viên</span>
-          </div>
-          <span className="dots">•••</span>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function SidebarPro({
-  view,
-  setView,
-  failedCount,
-}: {
-  view: View;
-  setView: (view: View) => void;
-  failedCount: number;
-}) {
-  const items: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-    { id: "contents", label: "Thư viện nội dung", icon: Library },
-    { id: "calendar", label: "Lịch đăng bài", icon: CalendarDays },
-    { id: "published", label: "Bài đã đăng", icon: CircleCheck },
-    { id: "failed", label: "Bài đăng lỗi", icon: CircleAlert },
-  ];
-
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-logo">
-          <img src="/images/logo.png" alt="Content Flow" />
-        </div>
-        <div>
-          <strong>Content flow</strong>
-          <span>Social workspace</span>
-        </div>
-      </div>
-      <div className="workspace-label">KHÔNG GIAN LÀM VIỆC</div>
-      <nav className="nav">
-        {items.map(({ id, label, icon: Icon }) => (
-          <button
-            className={view === id ? "active" : ""}
-            key={id}
-            onClick={() => setView(id)}
-          >
-            <Icon size={17} strokeWidth={1.8} />
-            {label}
-            {id === "failed" && failedCount > 0 && (
-              <span className="nav-count">{failedCount}</span>
-            )}
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-bottom">
-        <div className="automation-card">
-          <div className="automation-title">
-            <span className="online-dot" /> Tự động hóa
-          </div>
-          <p>n8n đang kiểm tra lịch đăng mỗi phút.</p>
-          <span className="automation-link">
-            Đã kết nối tốt <b>→</b>
-          </span>
-        </div>
-        <div className="user-chip">
-          <div className="avatar">AD</div>
-          <div>
-            <strong>Admin</strong>
-            <span>Quản trị viên</span>
-          </div>
-          <MoreHorizontal className="dots" size={17} />
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function Dashboard({
-  counts,
-  contents,
-}: {
-  counts: Record<string, number>;
-  contents: ContentItem[];
-}) {
-  return (
-    <>
-      <section className="stats">
-        {[
-          ["Tổng nội dung", counts.total],
-          ["Bài nháp", counts.draft],
-          ["Đã lên lịch", counts.scheduled],
-          ["Đã đăng", counts.published],
-          ["Thất bại", counts.failed],
-        ].map(([label, value], index) => (
-          <div className="stat" key={String(label)}>
-            <div className="stat-label">{label}</div>
-            <div className={`stat-value ${index === 3 ? "stat-accent" : ""}`}>
-              {value}
-            </div>
-          </div>
-        ))}
-      </section>
-      <div className="content-grid dashboard-grid">
-        <section className="panel">
-          <div className="panel-head">
-            <div>
-              <h2>Nội dung gần đây</h2>
-              <p className="subtle">Các form mới gửi về</p>
-            </div>
-            {contents[0] ? (
-              <Link className="secondary" href={`/content/${contents[0].id}`}>
-                Xem tất cả
-              </Link>
-            ) : (
-              <button className="secondary" disabled>
-                Xem tất cả
-              </button>
-            )}
-          </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nội dung</th>
-                  <th>Người gửi</th>
-                  <th>Nền tảng</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contents.length ? (
-                  contents.map((item) => (
-                    <tr className="clickable" key={item.id}>
-                      <td>
-                        <Link
-                          className="content-link"
-                          href={`/content/${item.id}`}
-                        >
-                          <span className="recent-title-list">
-                            {item.posts.length ? (
-                              item.posts.map((post) => (
-                                <span
-                                  className="recent-title-item"
-                                  key={post.id}
-                                >
-                                  <small>
-                                    {postTypeLabels[post.postType] ||
-                                      platformLabels[post.platform]}
-                                  </small>
-                                  <strong>
-                                    {truncateText(
-                                      getPostDisplayTitle(
-                                        post,
-                                        item.note || "Chưa có tiêu đề",
-                                      ),
-                                      48,
-                                    )}
-                                  </strong>
-                                </span>
-                              ))
-                            ) : (
-                              <strong>
-                                {truncateText(
-                                  item.note || "Chưa có tiêu đề",
-                                  58,
-                                )}
-                              </strong>
-                            )}
-                          </span>
-                        </Link>
-                        <br />
-                        <span className="subtle">
-                          {formatVietnamDateTime(item.createdAt)}
-                        </span>
-                      </td>
-                      <td>{item.employee}</td>
-                      <td className="subtle">{getContentPlatforms(item)}</td>
-                      <td>
-                        <span className={`badge ${getOverallStatus(item)}`}>
-                          {item.posts.length
-                            ? statusLabels[getOverallStatus(item)]
-                            : "Chưa có nội dung"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="subtle">
-                      Chưa có dữ liệu.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
-    </>
-  );
-}
-
-function ContentList({
-  contents,
-  query,
-  setQuery,
-  retryPost,
-  onDeleted,
-}: {
-  contents: ContentItem[];
-  query: string;
-  setQuery: (value: string) => void;
-  retryPost: (contentId: string, postId: string) => void;
-  onDeleted: (id: string) => void;
-}) {
-  const router = useRouter();
-
-  return (
-    <section className="panel">
-      <div className="panel-head">
-        <div>
-          <h2>Tất cả nội dung</h2>
-          <p className="subtle">{contents.length} nội dung</p>
-        </div>
-      </div>
-      <div className="filters">
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Tìm người gửi, ghi chú hoặc nội dung..."
-        />
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Ghi chú công việc</th>
-              <th>Người gửi</th>
-              <th>Nền tảng</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contents.map((item) => {
-              const overallStatus = getOverallStatus(item);
-              return (
-                <tr
-                  key={item.id}
-                  className="clickable"
-                  tabIndex={0}
-                  onClick={() => router.push(`/content/${item.id}`)}
-                  onKeyDown={(event) => {
-                    if (event.target !== event.currentTarget) return;
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      router.push(`/content/${item.id}`);
-                    }
-                  }}
-                >
-                  <td>
-                    <Link
-                      className="content-link"
-                      href={`/content/${item.id}`}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <strong>{truncateText(getContentTitle(item), 48)}</strong>
-                    </Link>
-                  </td>
-                  <td>{item.employee}</td>
-                  <td>
-                    <div className="platform-statuses">
-                      {item.posts.length ? (
-                        item.posts.map((post) => (
-                          <span className="platform-status" key={post.id}>
-                            <span className="platform-status-label">
-                              {getPostChannelLabel(post)}
-                            </span>
-                            <span className={`badge ${post.status}`}>
-                              {statusLabels[post.status]}
-                            </span>
-                          </span>
-                        ))
-                      ) : (
-                        <span className="subtle">Chưa có nền tảng</span>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`badge ${overallStatus}`}>
-                      {statusLabels[overallStatus]}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="content-row-actions">
-                      {item.posts.find((post) => post.status === "failed") ? (
-                        <button
-                          className="secondary"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            const failedPost = item.posts.find(
-                              (post) => post.status === "failed",
-                            );
-                            if (failedPost) retryPost(item.id, failedPost.id);
-                          }}
-                        >
-                          Thử lại
-                        </button>
-                      ) : (
-                        <Link
-                          className="secondary"
-                          href={`/content/${item.id}`}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          Mở bài
-                        </Link>
-                      )}
-                      <DeleteContentButton content={item} title={getContentTitle(item)} onDeleted={onDeleted} />
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {!contents.length && (
-              <tr>
-                <td colSpan={5} className="subtle">
-                  Chưa có dữ liệu.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-function DetailView({
-  selected,
-  platform,
-  setPlatform,
-  onBack,
-  updatePost,
-  approvePost,
-  schedulePost,
-  saved,
-  setSaved,
-}: {
-  selected: ContentItem;
-  platform: Platform;
-  setPlatform: (platform: Platform) => void;
-  onBack: () => void;
-  updatePost: (
-    contentId: string,
-    postId: string,
-    update: Partial<SocialPost>,
-  ) => void;
-  approvePost: () => void;
-  schedulePost: (scheduledAt: string) => void;
-  saved: boolean;
-  setSaved: (value: boolean) => void;
-}) {
-  const post = selected.posts.find((item) => item.platform === platform) ?? {
-    id: "",
-    platform,
-    postType: "post" as const,
-    content: "",
-    status: "draft" as const,
-  };
-  const hasPost = Boolean(post.id);
-  return (
-    <div className="detail">
-      <div className="detail-top">
-        <div>
-          <button className="back" onClick={onBack}>
-            ← Quay lại thư viện
-          </button>
-          <h1 style={{ marginTop: 16 }}>Chi tiết nội dung</h1>
-          <p className="subtle">
-            {selected.employee} · Tạo ngày{" "}
-            {formatVietnamDateTime(selected.createdAt)}
-          </p>
-        </div>
-        <span className={`badge ${hasPost ? post.status : "draft"}`}>
-          {hasPost ? statusLabels[post.status] : "Chưa có nội dung"}
-        </span>
-      </div>
-      <section className="panel">
-        <div className="panel-head">
-          <div>
-            <h2>Hình ảnh</h2>
-            <p className="subtle">
-              {selected.images.length} ảnh từ Google Drive
-            </p>
-          </div>
-        </div>
-        <div style={{ padding: 20 }}>
-          <div className="image-row">
-            <AntImage.PreviewGroup>
-              {selected.images.map((image) => (
-                <div className="image" key={image}>
-                  {isImageSource(image) ? (
-                    <AntImage
-                      src={image}
-                      alt="Ảnh công việc"
-                      preview={{ mask: "Xem ảnh lớn" }}
-                      width="100%"
-                      height="100%"
-                    />
-                  ) : (
-                    image
-                  )}
-                </div>
-              ))}
-            </AntImage.PreviewGroup>
-          </div>
-        </div>
-      </section>
-      <section className="panel">
-        <div className="panel-head">
-          <div>
-            <h2>Ghi chú công việc</h2>
-            <p className="subtle">Dữ liệu từ Google Form</p>
-          </div>
-        </div>
-        <div style={{ padding: 20 }}>
-          <div className="note">{selected.note}</div>
-        </div>
-      </section>
-      <section className="panel">
-        <div className="tabs">
-          {(["facebook", "linkedin", "youtube", "tiktok"] as Platform[]).map((item) => (
-            <button
-              className={platform === item ? "active" : ""}
-              key={item}
-              disabled={!selected.posts.some((post) => post.platform === item)}
-              onClick={() => setPlatform(item)}
-            >
-              {platformLabels[item]}
-            </button>
-          ))}
-        </div>
-        <div className="editor-grid">
-          <div>
-            <h3 style={{ marginBottom: 10 }}>Chỉnh sửa nội dung</h3>
-            <textarea
-              value={post.content}
-              disabled={!hasPost || post.status === "published" || (post.platform === "tiktok" && post.status === "scheduled")}
-              onChange={(event) =>
-                updatePost(selected.id, post.id, {
-                  content: event.target.value,
-                  status: post.status === "approved" ? "draft" : post.status,
-                })
-              }
-            />
-          </div>
-          <div>
-            <h3 style={{ marginBottom: 10 }}>
-              Xem trước {platformLabels[platform]}
-            </h3>
-            <div className="preview">{post.content}</div>
-            <p className="subtle" style={{ marginTop: 10 }}>
-              Múi giờ: Asia/Ho_Chi_Minh
-            </p>
-          </div>
-        </div>
-        <div className="actions">
-          <button className="secondary" onClick={() => setSaved(true)}>
-            Lưu thay đổi
-          </button>
-          {post.status === "draft" && (
-            <button
-              className="secondary"
-              onClick={approvePost}
-              disabled={!hasPost || !post.content.trim()}
-            >
-              Duyệt bài
-            </button>
-          )}
-          <button
-            className="primary"
-            onClick={() => schedulePost("2026-09-10 09:30")}
-            disabled={!hasPost || post.status !== "approved"}
-          >
-            Lên lịch
-          </button>
-        </div>
-        {saved && (
-          <p
-            className="subtle"
-            style={{
-              padding: "0 20px 18px",
-              textAlign: "right",
-              color: "var(--green)",
-            }}
-          >
-            Đã lưu thay đổi
-          </p>
-        )}
-      </section>
-    </div>
-  );
-}
-
-export function DetailViewPro({
-  selected,
-  platform,
-  setPlatform,
-  onBack,
-  onDeleted,
-  updatePost,
-  approvePost,
-  schedulePost,
-  saved,
-  setSaved,
-}: {
-  selected: ContentItem;
-  platform: Platform;
-  setPlatform: (platform: Platform) => void;
-  onBack: () => void;
-  onDeleted: (id: string) => void;
-  updatePost: (
-    contentId: string,
-    postId: string,
-    update: Partial<SocialPost>,
-  ) => void;
-  approvePost: () => void;
-  schedulePost: (scheduledAt: string) => void;
-  saved: boolean;
-  setSaved: (value: boolean) => void;
-}) {
-  const post = selected.posts.find((item) => item.platform === platform) ?? {
-    id: "",
-    platform,
-    postType: "post" as const,
-    content: "",
-    status: "draft" as const,
-  };
-  const hasPost = Boolean(post.id);
-  const tiktokValidationError = post.platform === "tiktok"
-    ? selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video." : validateTikTokPost(post.content, post.tiktokOptions)
-    : null;
-  const currentStatus = hasPost ? post.status : "draft";
-  const StatusIcon =
-    currentStatus === "published"
-      ? CircleCheck
-      : currentStatus === "failed"
-        ? CircleAlert
-        : currentStatus === "scheduled"
-          ? CalendarClock
-          : FileText;
-  const [modal, setModal] = useState<"approve" | "schedule" | null>(null);
-  const tomorrow = new Date(Date.now() + 86400000);
-  const defaultDate = vietnamDateInputValue(tomorrow);
-  const [scheduleDate, setScheduleDate] = useState(defaultDate);
-  const [scheduleTime, setScheduleTime] = useState("09:30");
-  const [scheduleError, setScheduleError] = useState("");
-
-  function confirmSchedule() {
-    const selectedDateTime = new Date(
-      `${scheduleDate}T${scheduleTime}:00+07:00`,
-    );
-    if (
-      !scheduleDate ||
-      !scheduleTime ||
-      Number.isNaN(selectedDateTime.getTime()) ||
-      selectedDateTime <= new Date()
-    ) {
-      setScheduleError("Vui lòng chọn thời gian ở tương lai.");
-      return;
-    }
-    schedulePost(`${scheduleDate} ${scheduleTime}`);
-    setModal(null);
-    setScheduleError("");
-  }
-
-  return (
-    <div className="editor-page">
-      <header className="editor-header editor-header-with-actions">
-        <div>
-          <button className="editor-back" onClick={onBack}>
-            <ArrowLeft size={16} /> Quay lại thư viện
-          </button>
-          <div className="editor-title-row">
-            <div>
-              <div className="eyebrow">Biên tập nội dung</div>
-              <h1>Chi tiết bài viết</h1>
-              <p className="subtle">
-                {selected.employee} <span className="meta-dot">•</span> Tạo ngày{" "}
-                {formatVietnamDateTime(selected.createdAt)}
-              </p>
-            </div>
-          </div>
-        </div>
-        <DeleteContentButton content={selected} title={getContentTitle(selected)} onDeleted={onDeleted} />
-      </header>
-      <div className="editor-layout">
-        <aside className="editor-context">
-          <section className="context-section">
-            <div className="context-heading">
-              <FileText size={16} />
-              <span>Thông tin công việc</span>
-            </div>
-            <div className="context-note">{selected.note}</div>
-          </section>
-          <section className="context-section">
-            <div className="context-heading">
-              <ImageIcon size={16} />
-              <span>Media đính kèm</span>
-              <small>
-                {selected.images.length} ảnh
-                {selected.videos.length
-                  ? ` · ${selected.videos.length} video`
-                  : ""}
-              </small>
-            </div>
-            <div className="context-images">
-              <AntImage.PreviewGroup>
-                {selected.images.map((image) => (
-                  <div className="context-image" key={image}>
-                    {isImageSource(image) ? (
-                      <AntImage
-                        src={image}
-                        alt="Ảnh công việc"
-                        preview={{ mask: "Xem ảnh lớn" }}
-                        width="100%"
-                        height="100%"
-                      />
-                    ) : (
-                      image
-                    )}
-                  </div>
-                ))}
-              </AntImage.PreviewGroup>
-            </div>
-            {selected.videos.length > 0 && (
-              <div className="context-videos">
-                {selected.videos.map((video) => (
-                  <video
-                    className="context-video"
-                    key={video}
-                    src={isVideoSource(video) ? video : undefined}
-                    controls
-                    preload="metadata"
-                    aria-label="Video đính kèm"
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-          <section className="context-section context-meta">
-            <div>
-              <span>Nguồn dữ liệu</span>
-              <strong>Google Form</strong>
-            </div>
-            <div>
-              <span>Người gửi</span>
-              <strong>{selected.employee}</strong>
-            </div>
-            <div>
-              <span>Múi giờ</span>
-              <strong>Asia/Ho_Chi_Minh</strong>
-            </div>
-          </section>
-        </aside>
-        <main className="editor-workspace">
-          <section className={`editor-status-banner ${currentStatus}`}>
-            <div className="editor-status-icon">
-              <StatusIcon size={19} />
-            </div>
-            <div className="editor-status-copy">
-              <span>TRẠNG THÁI {platformLabels[platform].toUpperCase()}</span>
-              <strong>
-                {hasPost ? statusLabels[currentStatus] : "Chưa có nội dung"}
-              </strong>
-              <p>
-                {currentStatus === "scheduled" && post.scheduledAt
-                  ? `Đã lên lịch đăng lúc ${formatVietnamDateTime(post.scheduledAt)}`
-                  : currentStatus === "published"
-                    ? "Nội dung đã được đăng thành công trên nền tảng này."
-                    : currentStatus === "failed"
-                      ? post.error ||
-                        "Nội dung đăng thất bại, cần kiểm tra và thử lại."
-                      : currentStatus === "approved"
-                        ? "Nội dung đã được duyệt và sẵn sàng lên lịch."
-                        : "Nội dung đang ở chế độ chỉnh sửa."}
-              </p>
-            </div>
-            <span className="editor-status-platform">
-              {platformLabels[platform]}
-            </span>
-          </section>
-          <div className="platform-bar">
-            <div>
-              <span className="workspace-label-light">NỀN TẢNG ĐĂNG</span>
-              <div className="platform-tabs">
-                {(["facebook", "linkedin", "youtube", "tiktok"] as Platform[]).map(
-                  (item) => (
-                    <button
-                      className={platform === item ? "active" : ""}
-                      key={item}
-                      disabled={
-                        !selected.posts.some((post) => post.platform === item)
-                      }
-                      title={
-                        selected.posts.some((post) => post.platform === item)
-                          ? undefined
-                          : `Chưa có nội dung ${platformLabels[item]}`
-                      }
-                      onClick={() => setPlatform(item)}
-                    >
-                      {platformLabels[item]}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
-            <div className="editor-tools">
-              <button title="Xem trước">
-                <Eye size={16} /> Xem trước
-              </button>
-              <span className="tool-divider" />
-              <span className="character-count">
-                {post.content.length} ký tự
-              </span>
-            </div>
-          </div>
-          <div className="writing-grid">
-            <section className="writing-panel">
-              <div className="writing-panel-head">
-                <div>
-                  <h2>Nội dung bài đăng</h2>
-                  <p className="subtle">
-                    Bạn có thể chỉnh sửa nội dung AI trước khi duyệt.
-                  </p>
-                </div>
-                <span className="ai-tag">AI đã tạo</span>
-              </div>
-              {hasPost && post.platform === "tiktok" && (
-                <TikTokPostOptions
-                  value={post.tiktokOptions}
-                  disabled={post.status === "published" || post.status === "scheduled"}
-                  onChange={(tiktokOptions) => updatePost(selected.id, post.id, {
-                    tiktokOptions,
-                    status: post.status === "approved" ? "draft" : post.status,
-                  })}
-                />
-              )}
-              {hasPost && post.platform === "youtube" && (
-                <div className="video-copy-fields">
-                  <label>
-                    <span>
-                      {post.postType === "youtube_short"
-                        ? "Tiêu đề YouTube Short"
-                        : "Tiêu đề video thường"}
-                    </span>
-                    <input
-                      className="video-title-input"
-                      value={post.title ?? ""}
-                      maxLength={100}
-                      disabled={post.status === "published"}
-                      placeholder="Nhập tiêu đề video"
-                      onChange={(event) =>
-                        updatePost(selected.id, post.id, {
-                          title: event.target.value,
-                          status:
-                            post.status === "approved" ? "draft" : post.status,
-                        })
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Mô tả video</span>
-                    <textarea
-                      className="video-description-input"
-                      value={post.description ?? ""}
-                      rows={4}
-                      disabled={post.status === "published"}
-                      placeholder="Nhập mô tả video"
-                      onChange={(event) =>
-                        updatePost(selected.id, post.id, {
-                          description: event.target.value,
-                          status:
-                            post.status === "approved" ? "draft" : post.status,
-                        })
-                      }
-                    />
-                  </label>
-                </div>
-              )}
-              <textarea
-                className="pro-textarea"
-                maxLength={post.platform === "tiktok" ? 2200 : undefined}
-                value={post.content}
-                disabled={!hasPost || post.status === "published" || (post.platform === "tiktok" && post.status === "scheduled")}
-                onChange={(event) =>
-                  updatePost(selected.id, post.id, {
-                    content: event.target.value,
-                    status: post.status === "approved" ? "draft" : post.status,
-                  })
-                }
-              />
-              <div className="writing-footer">
-                <span>Đã lưu tự động khi bấm lưu</span>
-                <button className="secondary" onClick={() => setSaved(true)}>
-                  <Save size={15} /> Lưu thay đổi
-                </button>
-              </div>
-            </section>
-            <section className="preview-panel">
-              <div className="preview-head">
-                <div>
-                  <h2>Xem trước</h2>
-                  <p className="subtle">Hiển thị gần giống bài đăng thật</p>
-                </div>
-                <span className="preview-platform">
-                  {hasPost
-                    ? postTypeLabels[post.postType] || platformLabels[platform]
-                    : platformLabels[platform]}
-                </span>
-              </div>
-              <div className={`social-preview ${platform}`}>
-                <div className="social-preview-head">
-                  <div className="preview-avatar">
-                    <img src="/images/logo.png" alt="EPCB" />
-                  </div>
-                  <div>
-                    <strong>EPCB</strong>
-                    <span>Vừa xong · 🌐</span>
-                  </div>
-                  <MoreHorizontal size={17} />
-                </div>
-                <div className="social-copy">
-                  {hasPost
-                    ? post.content
-                    : `Chưa có nội dung ${platformLabels[platform]}.`}
-                </div>
-                <div
-                  className={`preview-image ${selected.videos.length ? "has-video" : ""}`}
-                >
-                  {selected.videos.length ? (
-                    <div className={`preview-video-wrap ${post.postType}`}>
-                      <video
-                        className="preview-video"
-                        src={
-                          isVideoSource(selected.videos[0])
-                            ? selected.videos[0]
-                            : undefined
-                        }
-                        controls
-                        preload="metadata"
-                        playsInline
-                        aria-label={postTypeLabels[post.postType]}
-                      />
-                      <span className="video-type-chip">
-                        {postTypeLabels[post.postType]}
-                      </span>
-                    </div>
-                  ) : selected.images.length ? (
-                    <AntImage.PreviewGroup>
-                      <div
-                        className={`preview-images count-${Math.min(selected.images.length, 3)}`}
-                      >
-                        {selected.images.map((image) =>
-                          isImageSource(image) ? (
-                            <AntImage
-                              key={image}
-                              src={image}
-                              alt="Ảnh bài đăng"
-                              preview={{ mask: "Xem ảnh lớn" }}
-                            />
-                          ) : null,
-                        )}
-                      </div>
-                    </AntImage.PreviewGroup>
-                  ) : (
-                    "Media bài đăng"
-                  )}
-                </div>
-                {platform === "youtube" && hasPost && (
-                  <div className="youtube-preview-copy">
-                    <strong>{post.title || "Chưa có tiêu đề video"}</strong>
-                    <p>{post.description || "Chưa có mô tả video"}</p>
-                  </div>
-                )}
-                <div className="preview-actions">
-                  <span>♡ Thích</span>
-                  <span>◯ Bình luận</span>
-                  <span>↗ Chia sẻ</span>
-                </div>
-              </div>
-            </section>
-          </div>
-          <div className="editor-action-bar">
-            <div>
-              {tiktokValidationError && <span role="status">{tiktokValidationError}</span>}
-              {saved && (
-                <span className="saved-message">
-                  <Check size={15} /> Đã lưu thay đổi
-                </span>
-              )}
-            </div>
-            <div className="action-buttons">
-              {(post.status === "draft" || (post.platform === "tiktok" && post.status === "failed")) && (
-                <button
-                  className="secondary"
-                  onClick={() => setModal("approve")}
-                  disabled={!hasPost || !post.content.trim() || Boolean(tiktokValidationError)}
-                  title={tiktokValidationError || undefined}
-                >
-                  <Check size={15} /> Duyệt bài
-                </button>
-              )}
-              <button
-                className="primary"
-                onClick={() => setModal("schedule")}
-                disabled={!hasPost || post.status !== "approved" || Boolean(tiktokValidationError)}
-              >
-                <CalendarClock size={15} /> Lên lịch đăng
-              </button>
-            </div>
-          </div>
-          {modal && (
-            <div
-              className="modal-backdrop"
-              role="presentation"
-              onMouseDown={(event) =>
-                event.target === event.currentTarget && setModal(null)
-              }
-            >
-              <section
-                className="confirm-modal"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="modal-title"
-              >
-                {modal === "approve" ? (
-                  <>
-                    <div className="modal-icon approve-icon">
-                      <Check size={20} />
-                    </div>
-                    <h2 id="modal-title">Duyệt bài viết?</h2>
-                    <p>
-                      Bài viết {platformLabels[platform]} sẽ chuyển sang trạng
-                      thái đã duyệt và sẵn sàng để lên lịch.
-                    </p>
-                    <div className="modal-actions">
-                      <button
-                        className="secondary"
-                        onClick={() => setModal(null)}
-                      >
-                        Hủy
-                      </button>
-                      <button
-                        className="primary"
-                        onClick={() => {
-                          approvePost();
-                          setModal(null);
-                        }}
-                      >
-                        <Check size={15} /> Xác nhận duyệt
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="modal-icon schedule-icon">
-                      <CalendarClock size={20} />
-                    </div>
-                    <h2 id="modal-title">Lên lịch đăng bài</h2>
-                    <p>
-                      Chọn thời gian đăng cho bài {platformLabels[platform]}.
-                    </p>
-                    <div className="schedule-fields">
-                      <label>
-                        Ngày đăng
-                        <input
-                          type="date"
-                          min={vietnamDateInputValue()}
-                          value={scheduleDate}
-                          onChange={(event) =>
-                            setScheduleDate(event.target.value)
-                          }
-                        />
-                      </label>
-                      <label>
-                        Giờ đăng
-                        <input
-                          type="time"
-                          value={scheduleTime}
-                          onChange={(event) =>
-                            setScheduleTime(event.target.value)
-                          }
-                        />
-                      </label>
-                    </div>
-                    <div className="timezone-note">
-                      <CalendarDays size={14} /> Múi giờ: Asia/Ho_Chi_Minh
-                    </div>
-                    {scheduleError && (
-                      <p className="modal-error">{scheduleError}</p>
-                    )}
-                    <div className="modal-actions">
-                      <button
-                        className="secondary"
-                        onClick={() => setModal(null)}
-                      >
-                        Hủy
-                      </button>
-                      <button className="primary" onClick={confirmSchedule}>
-                        <CalendarClock size={15} /> Xác nhận lên lịch
-                      </button>
-                    </div>
-                  </>
-                )}
-              </section>
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
-
-function PostList({
-  title,
-  posts,
-  retryPost,
-}: {
-  title: string;
-  posts: (SocialPost & { employee: string; contentId: string })[];
-  retryPost?: (contentId: string, postId: string) => void;
-}) {
-  return (
-    <section className="panel">
-      <div className="panel-head">
-        <div>
-          <h2>{title}</h2>
-          <p className="subtle">
-            Trạng thái và lịch sử đăng theo từng nền tảng
-          </p>
-        </div>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nền tảng</th>
-              <th>Nội dung</th>
-              <th>Người gửi</th>
-              <th>Trạng thái</th>
-              <th>Lỗi / thời gian</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {posts.map((post) => (
-              <tr key={post.id}>
-                <td>{platformLabels[post.platform]}</td>
-                <td>{truncateText(getPostDisplayTitle(post), 55)}</td>
-                <td>{post.employee}</td>
-                <td>
-                  <span className={`badge ${post.status}`}>
-                    {statusLabels[post.status]}
-                  </span>
-                </td>
-                <td className="subtle">
-                  {post.error ??
-                    (post.status === "published"
-                      ? post.publishedAt
-                        ? formatVietnamDateTime(post.publishedAt)
-                        : post.scheduledAt
-                          ? formatVietnamDateTime(post.scheduledAt)
-                          : "Đăng thành công"
-                      : post.scheduledAt
-                        ? formatVietnamDateTime(post.scheduledAt)
-                        : "—")}
-                </td>
-                <td>
-                  {retryPost && post.platform === "tiktok" && (
-                    <Link className="secondary" href={`/content/${post.contentId}`}>Xem và duyệt lại</Link>
-                  )}
-                  {retryPost && post.platform !== "tiktok" && (
-                    <button
-                      className="secondary"
-                      onClick={() => retryPost(post.contentId, post.id)}
-                    >
-                      Thử lại
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
-function Calendar({
-  posts,
-}: {
-  posts: (SocialPost & { employee: string; contentId: string })[];
-}) {
-  const [month, setMonth] = useState(() => {
-    return vietnamMonthStart();
-  });
-  const year = month.getFullYear();
-  const monthIndex = month.getMonth();
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const firstDay = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
-  const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
-  const monthLabel = new Intl.DateTimeFormat("vi-VN", {
-    month: "long",
-    year: "numeric",
-  }).format(month);
-  const calendarPosts = posts.filter(
-    (post) => post.status === "scheduled" || post.status === "published",
-  );
-
-  function eventDate(post: SocialPost) {
-    return post.status === "published"
-      ? post.publishedAt || post.scheduledAt
-      : post.scheduledAt;
-  }
-
-  function scheduledDateKey(value?: string) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value.slice(0, 10);
-    return new Intl.DateTimeFormat("en-CA", {
-      timeZone: "Asia/Ho_Chi_Minh",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(date);
-  }
-
-  const monthPosts = calendarPosts.filter((post) =>
-    scheduledDateKey(eventDate(post)).startsWith(monthKey),
-  );
-  const undatedPosts = calendarPosts.filter((post) => !eventDate(post));
-
-  return (
-    <section className="panel">
-      <div className="panel-head">
-        <div>
-          <h2>{monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}</h2>
-          <p className="subtle">
-            Bài đã lên lịch và đã đăng · Asia/Ho_Chi_Minh
-          </p>
-        </div>
-        <div className="calendar-nav">
-          <button
-            className="secondary"
-            aria-label="Tháng trước"
-            onClick={() => setMonth(new Date(year, monthIndex - 1, 1))}
-          >
-            ←
-          </button>
-          <button
-            className="secondary"
-            onClick={() => {
-              setMonth(vietnamMonthStart());
-            }}
-          >
-            Tháng hiện tại
-          </button>
-          <button
-            className="secondary"
-            aria-label="Tháng sau"
-            onClick={() => setMonth(new Date(year, monthIndex + 1, 1))}
-          >
-            →
-          </button>
-        </div>
-      </div>
-      <div className="calendar">
-        {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((day) => (
-          <div className="day" key={day}>
-            <strong>{day}</strong>
-          </div>
-        ))}
-        {Array.from({ length: firstDay }, (_, index) => (
-          <div className="day calendar-empty" key={`empty-${index}`} />
-        ))}
-        {Array.from({ length: daysInMonth }, (_, index) => {
-          const day = index + 1;
-          const dayKey = `${monthKey}-${String(day).padStart(2, "0")}`;
-          const events = monthPosts.filter(
-            (post) => scheduledDateKey(eventDate(post)) === dayKey,
-          );
-          return (
-            <div className="day" key={day}>
-              <div className="day-num">{day}</div>
-              {events.map((event) => (
-                <div className="event" key={event.id}>
-                  <strong>{platformLabels[event.platform]}</strong> ·{" "}
-                  {event.status === "published" ? "Đã đăng" : "Đã lên lịch"}
-                  <br />
-                  {postTypeLabels[event.postType] || "Bài viết"} ·{" "}
-                  {eventDate(event)
-                    ? new Intl.DateTimeFormat("vi-VN", {
-                        timeZone: "Asia/Ho_Chi_Minh",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }).format(new Date(eventDate(event)!))
-                    : ""}
-                  <br />
-                  {truncateText(getPostDisplayTitle(event), 50)}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-      </div>
-      {undatedPosts.length > 0 && (
-        <div className="undated-posts">
-          <h3>Bài chưa có ngày đăng</h3>
-          <p className="subtle">
-            Các bài này thiếu thời điểm đăng và thời gian lên lịch trong dữ liệu,
-            nên chưa thể đặt vào ngày cụ thể.
-          </p>
-          <div className="undated-post-list">
-            {undatedPosts.map((post) => (
-              <div className="event" key={post.id}>
-                <strong>{platformLabels[post.platform]}</strong> ·{" "}
-                {post.status === "published" ? "Đã đăng" : "Đã lên lịch"}
-                <br />
-                {postTypeLabels[post.postType] || "Bài viết"}
-                <br />
-                {truncateText(getPostDisplayTitle(post), 90)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </section>
   );
 }
