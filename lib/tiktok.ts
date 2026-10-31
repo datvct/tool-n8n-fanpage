@@ -34,11 +34,7 @@ export function isTikTokOptions(value: unknown): value is TikTokOptions {
       .every((key) => typeof options[key] === "boolean");
 }
 
-export function validateTikTokPost(content: string, options: unknown): string | null {
+export function validateTikTokPost(content: string): string | null {
   if (!content.trim() || content.length > 2200) return "Caption TikTok cần từ 1 đến 2.200 ký tự.";
-  if (!isTikTokOptions(options) || !options.privacyLevel)
-    return "Vui lòng chọn quyền riêng tư cho video TikTok trước khi duyệt.";
-  if (options.brandContent && options.privacyLevel === "SELF_ONLY")
-    return "Video hợp tác trả phí không thể đặt Chỉ mình tôi.";
   return null;
 }

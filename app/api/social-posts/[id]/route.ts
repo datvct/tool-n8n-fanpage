@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { isTikTokOptions, validateTikTokPost, type TikTokOptions } from "@/lib/tiktok";
-import { getTikTokCreator } from "@/lib/tiktok-server";
 
 export const runtime = "nodejs";
 
@@ -154,19 +153,12 @@ export async function PATCH(
       if ((data.content ?? current.content).length > 2200)
         return NextResponse.json({ success: false, error: "Caption TikTok tối đa 2.200 ký tự." }, { status: 400 });
       if (body.status === "approved" || body.status === "scheduled") {
-        const options = data.tiktokOptions ?? current.tiktokOptions;
-        const validationError = validateTikTokPost(data.content ?? current.content, options);
+        const validationError = validateTikTokPost(data.content ?? current.content);
         if (validationError)
           return NextResponse.json({ success: false, error: validationError }, { status: 400 });
         const videos = current.item.media.filter((media) => media.mimeType?.startsWith("video/") || /\.(mp4|mov|webm)$/i.test(media.fileName));
         if (videos.length !== 1)
           return NextResponse.json({ success: false, error: "Mỗi bài TikTok cần đúng một video." }, { status: 400 });
-        let creator;
-        try { creator = await getTikTokCreator(); } catch (error) {
-          return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Không thể kết nối TikTok." }, { status: 503 });
-        }
-        if (isTikTokOptions(options) && !creator.privacy_level_options.includes(options.privacyLevel))
-          return NextResponse.json({ success: false, error: "Quyền riêng tư đã chọn không còn được tài khoản TikTok hỗ trợ." }, { status: 400 });
       }
       if (body.status === "scheduled" && current.status !== "approved")
         return NextResponse.json({ success: false, error: "Cần duyệt bài TikTok trước khi lên lịch." }, { status: 400 });

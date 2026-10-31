@@ -1,8 +1,10 @@
 # Luồng đăng video TikTok
 
-Google Form/Sheet → AI tạo caption → Content Manager duyệt và chọn quyền riêng tư → lên lịch → n8n tải video Drive → TikTok Direct Post → kiểm tra kết quả → callback.
+Google Form/Sheet → AI tạo caption → Content Manager duyệt → lên lịch → n8n gửi video và caption tới Buffer → Buffer đăng lên TikTok → callback.
 
-## Lấy token bằng file Python
+## Token TikTok (chỉ dùng nếu đăng trực tiếp qua TikTok API)
+
+Workflow hiện dùng node Buffer, nên app không cần `TIKTOK_ACCESS_TOKEN` để mở cài đặt hoặc duyệt/lên lịch bài. Phần này chỉ cần nếu bạn chuyển lại sang nhánh TikTok Direct Post.
 
 Có sẵn script `scripts/get_tiktok_token.py`, chỉ cần Python 3, không cài thư viện ngoài. Script thực hiện bước tạo link cấp quyền và đổi code thành token theo [OAuth TikTok](https://developers.tiktok.com/docs/en/oauth-user-access-token-management).
 
@@ -17,7 +19,7 @@ python3 scripts/get_tiktok_token.py
 1. Nhập Client key, Client secret và Redirect URI khi script hỏi. Client secret nhập ẩn: dán rồi Enter, Terminal không hiển thị ký tự.
 2. Trình duyệt mở link cấp quyền; đăng nhập đúng tài khoản TikTok và đồng ý. Nếu không tự mở, copy link được in trong Terminal.
 3. Khi TikTok chuyển về callback n8n, copy toàn bộ URL trên thanh địa chỉ (có `code` và `state`) rồi dán vào Terminal. Dùng URL của chính lần chạy này, không dùng code/link của lần chạy trước.
-4. Script kiểm tra state, đổi code và lưu vào `.secrets/tiktok-token.json`. Mở file, copy giá trị `access_token` vào credential n8n và `TIKTOK_ACCESS_TOKEN` trong `.env` như hướng dẫn bên dưới. Thư mục `.secrets/` được Git bỏ qua; file token chỉ chủ tài khoản hệ điều hành được đọc/ghi. Client secret không được lưu.
+4. Script kiểm tra state, đổi code và lưu vào `.secrets/tiktok-token.json`. Thư mục `.secrets/` được Git bỏ qua; file token chỉ chủ tài khoản hệ điều hành được đọc/ghi. Client secret không được lưu.
 
 Gia hạn thủ công bằng refresh token đã lưu:
 
@@ -25,7 +27,7 @@ Gia hạn thủ công bằng refresh token đã lưu:
 python3 scripts/get_tiktok_token.py --refresh
 ```
 
-Script hỏi lại Client secret, lưu access/refresh token mới. Sau đó cập nhật token trong n8n và app. Script không tự sửa `.env`, credential n8n hoặc đăng video.
+Script hỏi lại Client secret, lưu access/refresh token mới. Script không tự sửa `.env`, credential n8n hoặc đăng video.
 
 Kiểm thử script bằng dữ liệu giả, không gọi TikTok:
 
@@ -45,11 +47,11 @@ npm run build
 
 Với database hiện hữu cần bản vá SQL riêng, dùng `prisma/patches/add-tiktok.sql` thay cho bước `db:push`. Bản vá chỉ thêm enum `tiktok`, `tiktok_video` và cột JSON `tiktok_options`. Docker production đã có bước `db push` trong entrypoint.
 
-Đặt `TIKTOK_ACCESS_TOKEN` trong môi trường của **app**, là user access token có scope `video.publish`. App dùng token phía server để lấy tài khoản và quyền riêng tư hiện có; token không được gửi về trình duyệt. Khởi động lại app sau khi đổi token.
+Không cần đặt `TIKTOK_ACCESS_TOKEN` khi dùng workflow Buffer.
 
-## 2. Cấu hình TikTok và n8n
+## 2. Cấu hình Buffer và n8n
 
-Bật Content Posting API / Direct Post cho app TikTok và cấp quyền từ tài khoản sẽ đăng. App chưa qua audit chỉ đăng ở chế độ riêng tư; thử với **Chỉ mình tôi**. Xem [hướng dẫn Direct Post của TikTok](https://developers.tiktok.com/docs/en/content-posting-api-get-started) và [tham chiếu API](https://developers.tiktok.com/docs/en/content-posting-api-reference-direct-post).
+Kết nối tài khoản TikTok muốn đăng trong Buffer. Đặt tài khoản TikTok ở chế độ công khai. Trong Buffer, mở cài đặt kênh TikTok và tắt **Enable Notifications by default** để bài đăng tự chạy thay vì yêu cầu bấm xác nhận trên điện thoại.
 
 Import/cập nhật ba workflow:
 
@@ -59,14 +61,15 @@ Import/cập nhật ba workflow:
 
 Chọn lại credentials và URL theo môi trường triển khai, sau đó activate workflow. Không kích hoạt thêm bản sao có cùng webhook path. Giữ các credential Facebook, LinkedIn, YouTube đang dùng.
 
-Nhánh TikTok mới cần hai credential loại **Header Auth**:
+Trong node **Buffer Publish TikTok Video**, chọn Buffer API credential, Organization và kênh TikTok đã kết nối. Node dùng `Share Now`, `Automatic` và `Video`; do đó khi webhook đến giờ lịch, Buffer sẽ bắt đầu đăng ngay. Buffer mặc định đăng video TikTok công khai. Node cần URL video có thể truy cập công khai.
+
+Nhánh callback cần credential loại **Header Auth**:
 
 | Tên credential | Header | Giá trị |
 | --- | --- | --- |
-| `TikTok Content Posting Bearer` | `Authorization` | `Bearer <user access token>` |
 | `Content Manager Publish Callback` | `x-publish-key` | Cùng giá trị `N8N_PUBLISH_CALLBACK_KEY` của app |
 
-Gán credential TikTok cho `Query TikTok Creator`, `Initialize TikTok Publish`, `Fetch TikTok Publish Status`. Gán credential callback cho hai node `Callback Backend … TikTok`. **Token ở n8n phải thuộc cùng tài khoản với token ở app.** Khi token hết hạn, làm mới/cập nhật cả hai nơi; luồng này chưa tự thực hiện OAuth hoặc refresh token.
+Gán credential callback cho hai node `Callback Backend … TikTok`. Không cần credential TikTok Direct Post trong nhánh Buffer.
 
 Đặt biến môi trường **n8n** `CONTENT_MANAGER_URL`, ví dụ `https://content.example.com`, không có dấu `/` cuối. Nếu instance chặn `$env`, thay URL ở hai node callback bằng URL ứng dụng cụ thể. App tiếp tục dùng `N8N_PUBLISH_WEBHOOK_URL` trỏ tới `/webhook/content-manager/publish-scheduled`; node cuối workflow trigger trỏ tới `/webhook/content-manager/publish-event` của cùng instance. Kiểm tra Header Auth webhook khớp `N8N_PUBLISH_WEBHOOK_KEY`.
 
@@ -103,19 +106,15 @@ Gửi tới `POST /api/contents/import`, header `x-n8n-key` theo `N8N_IMPORT_API
 
 ## 4. Duyệt và lên lịch
 
-Mở bài → tab **TikTok** → kiểm tra video và caption → chọn quyền riêng tư → chọn các quyền tương tác và khai báo thương mại/AI nếu áp dụng → **Duyệt bài** → **Lên lịch đăng**.
+Mở bài → tab **TikTok** → kiểm tra video và caption → **Duyệt bài** → **Lên lịch đăng**.
 
-Quyền riêng tư không được chọn mặc định. App hiển thị tài khoản và thời lượng tối đa từ TikTok; n8n kiểm tra lại quyền riêng tư lúc thực sự đăng. Caption tối đa 2.200 ký tự. Chỉ nhận một video/bài; bản xem trước dùng khung dọc. TikTok kiểm tra codec, thời lượng và kích thước hình khi xử lý file, lỗi trả về được lưu vào bài.
+Content Manager không hỏi các quyền riêng tư hay tương tác vì node Buffer không nhận các trường đó. Caption tối đa 2.200 ký tự. Chỉ nhận một video/bài.
 
 Bài TikTok đã lên lịch không sửa/gửi lịch lại từ UI để tránh phát sinh nhiều lượt đăng. Import lại dữ liệu đã duyệt/lên lịch/đăng bị chặn để giữ đúng video đã duyệt. Với bài lỗi, mở **Xem và duyệt lại**, kiểm tra lỗi và duyệt lại trước khi chọn lịch mới.
 
 ## 5. Cách upload và theo dõi
 
-n8n dùng `FILE_UPLOAD`, hỗ trợ MP4/MOV/WebM, chia file thành phần 32 MiB và gửi tuần tự; phần dư gộp vào phần cuối. Không gửi link Drive trực tiếp cho TikTok nên không cần xác minh quyền sở hữu domain Drive. Video được đọc thành buffer khi chia phần; cần đủ RAM/binary storage trên n8n cho dung lượng file thực tế. Xem [Media Transfer Guide](https://developers.tiktok.com/docs/en/content-posting-api-media-transfer-guide).
-
-Sau upload, workflow hỏi trạng thái mỗi 30 giây, tối đa 120 lần. Chỉ `PUBLISH_COMPLETE` mới callback `published`. Lỗi API, lỗi tải/upload và trạng thái `FAILED` gửi callback lỗi. Với video riêng tư, `externalPostId` lưu `publish_id` nếu TikTok không trả public post ID. Xem [Get Post Status](https://developers.tiktok.com/docs/en/content-posting-api-reference-get-video-status).
-
-Nếu hết 60 phút hoặc lỗi truy vấn sau upload, thông báo lỗi yêu cầu kiểm tra `publish_id` trước khi đăng lại: TikTok vẫn có thể đang xử lý. Không tự khởi tạo lại phiên upload. Nếu webhook lên lịch bị timeout, kiểm tra execution n8n trước khi xử lý thủ công vì n8n có thể đã nhận lịch. Nếu callback lỗi, chạy lại riêng node callback; không chạy lại toàn bộ nhánh publish. Callback có ba lần thử khi lỗi kết nối.
+Buffer nhận video bằng URL và chịu trách nhiệm gửi bài lên kênh TikTok. Nếu Buffer yêu cầu xác nhận thay vì tự đăng, kiểm tra kênh đang bật **Automatic** và đã tắt đăng dạng thông báo mặc định. Nếu callback lỗi, chạy lại riêng node callback; không chạy lại node Buffer để tránh đăng trùng.
 
 ## 6. Kiểm thử
 

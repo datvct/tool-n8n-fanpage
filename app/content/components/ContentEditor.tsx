@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import TikTokPostOptions from "@/app/content/TikTokPostOptions";
 import DeleteContentButton from "@/app/content/DeleteContentButton";
 import { validateTikTokPost } from "@/lib/tiktok";
 import type { ContentItem, Platform, PostType, SocialPost } from "@/lib/content-types";
@@ -71,7 +70,7 @@ export function ContentEditor({
     ? "draft"
     : post.status;
   const tiktokValidationError = post.platform === "tiktok"
-    ? selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video." : validateTikTokPost(post.content, post.tiktokOptions)
+    ? selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video." : validateTikTokPost(post.content)
     : null;
   const [modal, setModal] = useState<"approve" | "schedule" | null>(null);
   const [showAddPlatform, setShowAddPlatform] = useState(false);
@@ -173,14 +172,10 @@ export function ContentEditor({
                 <span className="ai-tag">AI đã tạo</span>
               </div>
               {hasPost && post.platform === "tiktok" && (
-                <TikTokPostOptions
-                  value={post.tiktokOptions}
-                  disabled={post.status === "published" || post.status === "scheduled"}
-                  onChange={(tiktokOptions) => void saveChanges({
-                    tiktokOptions,
-                    status: editedStatus,
-                  })}
-                />
+                <div className="tiktok-options" role="note">
+                  <strong>Đăng qua Buffer</strong>
+                  <p>Đến giờ đã lên lịch, Buffer sẽ Share Now ở chế độ Automatic. TikTok sẽ đăng công khai khi tài khoản và kênh Buffer đang để công khai.</p>
+                </div>
               )}
               {hasPost && post.platform === "youtube" && (
                 <div className="video-copy-fields">
