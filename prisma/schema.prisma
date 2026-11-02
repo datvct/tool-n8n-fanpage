@@ -122,6 +122,7 @@ model SocialPost {
   title          String?          @db.Text
   description    String?          @db.Text
   tiktokOptions  Json?            @map("tiktok_options")
+  tiktokChannel   String?          @map("tiktok_channel")
   status         SocialPostStatus  @default(draft)
   scheduledAt    DateTime?        @map("scheduled_at")
   publishedAt    DateTime?        @map("published_at")

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { isTikTokOptions, validateTikTokPost, type TikTokOptions } from "@/lib/tiktok";
+import { isTikTokBufferChannel } from "@/lib/tiktok-channels";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ type UpdateBody = {
   title?: string;
   description?: string;
   tiktokOptions?: TikTokOptions;
+  tiktokChannel?: string | null;
 };
 
 const VIETNAM_OFFSET = "+07:00";
@@ -64,7 +66,8 @@ export async function PATCH(
       body.scheduledAt === undefined &&
       body.title === undefined &&
       body.description === undefined &&
-      body.tiktokOptions === undefined)
+      body.tiktokOptions === undefined &&
+      body.tiktokChannel === undefined)
   )
     return NextResponse.json(
       { success: false, error: "Không có dữ liệu cần cập nhật." },
@@ -78,12 +81,18 @@ export async function PATCH(
     title?: string;
     description?: string;
     tiktokOptions?: TikTokOptions;
+    tiktokChannel?: string | null;
     errorMessage?: string | null;
   } = {};
   if (body.tiktokOptions !== undefined) {
     if (!isTikTokOptions(body.tiktokOptions))
       return NextResponse.json({ success: false, error: "Cài đặt TikTok không hợp lệ." }, { status: 400 });
     data.tiktokOptions = body.tiktokOptions;
+  }
+  if (body.tiktokChannel !== undefined) {
+    if (body.tiktokChannel !== null && !isTikTokBufferChannel(body.tiktokChannel))
+      return NextResponse.json({ success: false, error: "Kênh TikTok không hợp lệ." }, { status: 400 });
+    data.tiktokChannel = body.tiktokChannel;
   }
   if (body.status && !["draft", "approved", "scheduled"].includes(body.status))
     return NextResponse.json({ success: false, error: "Trạng thái không hợp lệ." }, { status: 400 });
@@ -121,7 +130,7 @@ export async function PATCH(
     const current = await prisma.socialPost.findUnique({ where: { id }, include: { item: { include: { media: true } } } });
     if (!current)
       return NextResponse.json({ success: false, error: "Không tìm thấy bài đăng." }, { status: 404 });
-    const hasContentChanges = body.content !== undefined || body.title !== undefined || body.description !== undefined || body.tiktokOptions !== undefined;
+    const hasContentChanges = body.content !== undefined || body.title !== undefined || body.description !== undefined || body.tiktokOptions !== undefined || body.tiktokChannel !== undefined;
     if (["scheduled", "publishing", "published"].includes(current.status) && hasContentChanges)
       return NextResponse.json(
         { success: false, error: "Bài đã lên lịch hoặc đã đăng nên không thể sửa nội dung." },
@@ -152,6 +161,9 @@ export async function PATCH(
         return NextResponse.json({ success: false, error: "Bài TikTok đã được gửi đăng; không thể sửa hoặc gửi lại." }, { status: 409 });
       if ((data.content ?? current.content).length > 2200)
         return NextResponse.json({ success: false, error: "Caption TikTok tối đa 2.200 ký tự." }, { status: 400 });
+      const selectedChannel = data.tiktokChannel ?? current.tiktokChannel;
+      if ((body.status === "approved" || body.status === "scheduled") && (!selectedChannel || !isTikTokBufferChannel(selectedChannel)))
+        return NextResponse.json({ success: false, error: "Hãy chọn kênh TikTok Buffer trước khi duyệt hoặc lên lịch." }, { status: 400 });
       if (body.status === "approved" || body.status === "scheduled") {
         const validationError = validateTikTokPost(data.content ?? current.content);
         if (validationError)
@@ -215,6 +227,7 @@ export async function PATCH(
               title: post.title,
               description: post.description,
               tiktokOptions: post.tiktokOptions,
+              tiktokChannel: post.tiktokChannel,
               employee: scheduledPost.item.employeeName,
               note: scheduledPost.item.originalNote,
               media: scheduledPost.item.media.map((media) => ({

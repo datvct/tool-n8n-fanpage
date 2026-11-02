@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import DeleteContentButton from "@/app/content/DeleteContentButton";
 import { validateTikTokPost } from "@/lib/tiktok";
 import type { ContentItem, Platform, PostType, SocialPost } from "@/lib/content-types";
+import type { TikTokBufferChannel } from "@/lib/tiktok-channels";
 import {
   ArrowLeft,
   CalendarClock,
@@ -69,11 +70,22 @@ export function ContentEditor({
   const editedStatus = post.status === "approved" || post.status === "failed"
     ? "draft"
     : post.status;
-  const tiktokValidationError = post.platform === "tiktok"
-    ? selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video." : validateTikTokPost(post.content)
-    : null;
   const [modal, setModal] = useState<"approve" | "schedule" | null>(null);
   const [showAddPlatform, setShowAddPlatform] = useState(false);
+  const [tiktokChannels, setTiktokChannels] = useState<TikTokBufferChannel[]>([]);
+  const tiktokValidationError = post.platform === "tiktok"
+    ? !post.tiktokChannel ? "Hãy chọn kênh TikTok đăng bài."
+      : selected.videos.length !== 1 ? "Mỗi bài TikTok cần đúng một video."
+      : validateTikTokPost(post.content)
+    : null;
+
+  useEffect(() => {
+    if (platform !== "tiktok") return;
+    fetch("/api/tiktok/channels", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((result) => setTiktokChannels(result.success ? result.data : []))
+      .catch(() => setTiktokChannels([]));
+  }, [platform]);
 
   useEffect(() => {
     saveSequence.current += 1;
@@ -172,8 +184,19 @@ export function ContentEditor({
                 <span className="ai-tag">AI đã tạo</span>
               </div>
               {hasPost && post.platform === "tiktok" && (
-                <div className="tiktok-options" role="note">
+                <div className="tiktok-options">
                   <strong>Đăng qua Buffer</strong>
+                  <label>
+                    <span>Kênh TikTok đăng bài</span>
+                    <select
+                      value={post.tiktokChannel ?? ""}
+                      disabled={["scheduled", "publishing", "published"].includes(post.status)}
+                      onChange={(event) => void saveChanges({ tiktokChannel: event.target.value, status: editedStatus })}
+                    >
+                      <option value="">Chọn kênh TikTok</option>
+                      {tiktokChannels.map((channel) => <option key={channel.value} value={channel.value}>{channel.label}</option>)}
+                    </select>
+                  </label>
                   <p>Đến giờ đã lên lịch, Buffer sẽ Share Now ở chế độ Automatic. TikTok sẽ đăng công khai khi tài khoản và kênh Buffer đang để công khai.</p>
                 </div>
               )}

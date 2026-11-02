@@ -918,6 +918,127 @@ select:focus-visible {
   display: none;
 }
 
+.add-platform-modal {
+  width: min(100%, 560px);
+  padding: 28px;
+  border-radius: 18px;
+}
+
+.add-platform-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.add-platform-heading .modal-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  border-radius: 13px;
+}
+
+.add-platform-heading .icon-button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--ink-soft);
+  background: #fff;
+}
+
+.add-platform-heading .icon-button:hover:not(:disabled) {
+  border-color: #cbd8ce;
+  color: var(--ink);
+  background: #f6f9f6;
+}
+
+.add-platform-modal h2 {
+  margin: 0;
+  font: 700 23px/1.25 'Space Grotesk', sans-serif;
+}
+
+.add-platform-modal > p {
+  margin: 9px 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.add-platform-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.add-platform-fields > label {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.add-platform-fields select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 34px 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: 0;
+  color: var(--ink);
+  background: #fbfdfb;
+  font-size: 13px;
+}
+
+.add-platform-fields select:focus-visible {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.add-platform-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #e8eee9;
+  border-radius: 9px;
+  color: var(--ink-soft);
+  background: #f7faf7;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.add-platform-note svg {
+  flex: 0 0 auto;
+}
+
+.add-platform-modal .modal-actions {
+  margin-top: 20px;
+}
+
+@media (max-width: 560px) {
+  .add-platform-modal {
+    padding: 21px;
+  }
+
+  .add-platform-fields {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .add-platform-note {
+    grid-column: auto;
+  }
+}
+
 .writing-footer>span {
   display: inline-flex;
   align-items: center;
@@ -1782,6 +1903,9 @@ select:focus-visible {
 }
 
 .tiktok-options select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
   min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 7px;

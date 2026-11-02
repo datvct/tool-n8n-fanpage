@@ -20,6 +20,7 @@ export type SocialPost = {
   title?: string;
   description?: string;
   tiktokOptions?: import("./tiktok").TikTokOptions | null;
+  tiktokChannel?: string | null;
   status: ContentStatus;
   scheduledAt?: string;
   publishedAt?: string;

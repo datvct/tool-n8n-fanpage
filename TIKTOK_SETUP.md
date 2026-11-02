@@ -45,7 +45,7 @@ npm run db:push
 npm run build
 ```
 
-Với database hiện hữu cần bản vá SQL riêng, dùng `prisma/patches/add-tiktok.sql` thay cho bước `db:push`. Bản vá chỉ thêm enum `tiktok`, `tiktok_video` và cột JSON `tiktok_options`. Docker production đã có bước `db push` trong entrypoint.
+Với database hiện hữu cần bản vá SQL riêng, dùng `prisma/patches/add-tiktok.sql` thay cho bước `db:push`. Bản vá thêm enum `tiktok`, `tiktok_video` và các cột TikTok, bao gồm `tiktok_channel`. Docker production đã có bước `db push` trong entrypoint.
 
 Không cần đặt `TIKTOK_ACCESS_TOKEN` khi dùng workflow Buffer.
 
@@ -61,7 +61,7 @@ Import/cập nhật ba workflow:
 
 Chọn lại credentials và URL theo môi trường triển khai, sau đó activate workflow. Không kích hoạt thêm bản sao có cùng webhook path. Giữ các credential Facebook, LinkedIn, YouTube đang dùng.
 
-Trong node **Buffer Publish TikTok Video**, chọn Buffer API credential, Organization và kênh TikTok đã kết nối. Node dùng `Share Now`, `Automatic` và `Video`; do đó khi webhook đến giờ lịch, Buffer sẽ bắt đầu đăng ngay. Buffer mặc định đăng video TikTok công khai. Node cần URL video có thể truy cập công khai.
+Trong chi tiết bài TikTok trên website, chọn **EPCB IoT Lab** hoặc **EPCB IoT Sensor**. Webhook gửi giá trị `tiktokChannel` lần lượt là `epcb_iot_lab` hoặc `epcb_iot_sensor`; workflow chuẩn hóa và giữ nguyên giá trị này để bạn dùng làm điều kiện ở switch n8n. Trường `channelId` trong node **Buffer Publish TikTok Video** được để trống để bạn nối nhánh switch tới kênh tương ứng. Không cần cấu hình Buffer ID trong website. Node dùng `Share Now`, `Automatic` và `Video`; do đó khi webhook đến giờ lịch, Buffer sẽ bắt đầu đăng ngay. Buffer mặc định đăng video TikTok công khai. Node cần URL video có thể truy cập công khai.
 
 Nhánh callback cần credential loại **Header Auth**:
 
@@ -106,7 +106,7 @@ Gửi tới `POST /api/contents/import`, header `x-n8n-key` theo `N8N_IMPORT_API
 
 ## 4. Duyệt và lên lịch
 
-Mở bài → tab **TikTok** → kiểm tra video và caption → **Duyệt bài** → **Lên lịch đăng**.
+Mở bài → tab **TikTok** → chọn kênh đăng → kiểm tra video và caption → **Duyệt bài** → **Lên lịch đăng**. Website gửi account key trong webhook; không cần thêm hoặc sửa cột trong Google Form/Sheet.
 
 Content Manager không hỏi các quyền riêng tư hay tương tác vì node Buffer không nhận các trường đó. Caption tối đa 2.200 ký tự. Chỉ nhận một video/bài.
 

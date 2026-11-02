@@ -3,3 +3,4 @@
 ALTER TYPE "Platform" ADD VALUE IF NOT EXISTS 'tiktok';
 ALTER TYPE "PostType" ADD VALUE IF NOT EXISTS 'tiktok_video';
 ALTER TABLE "social_posts" ADD COLUMN IF NOT EXISTS "tiktok_options" JSONB;
+ALTER TABLE "social_posts" ADD COLUMN IF NOT EXISTS "tiktok_channel" TEXT;
