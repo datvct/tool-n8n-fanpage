@@ -67,6 +67,7 @@ export function ContentEditor({
     status: "draft" as const,
   };
   const hasPost = Boolean(post.id);
+  const missedSchedule = post.status === "scheduled" && Boolean(post.scheduledAt && new Date(post.scheduledAt).getTime() <= Date.now());
   const editedStatus = post.status === "approved" || post.status === "failed"
     ? "draft"
     : post.status;
@@ -285,9 +286,10 @@ export function ContentEditor({
               <button
                 className="primary"
                 onClick={() => setModal("schedule")}
-                disabled={!hasPost || post.status !== "approved" || Boolean(tiktokValidationError)}
+                disabled={!hasPost || (post.status !== "approved" && !missedSchedule) || Boolean(tiktokValidationError)}
+                hidden={post.status !== "approved" && !missedSchedule}
               >
-                <CalendarClock size={15} /> Lên lịch đăng
+                <CalendarClock size={15} /> {missedSchedule ? "Đổi lịch đăng" : "Lên lịch đăng"}
               </button>
             </div>
           </div>
@@ -297,6 +299,7 @@ export function ContentEditor({
             onClose={() => setModal(null)}
             onApprove={() => { approvePost(); setModal(null); }}
             onSchedule={(scheduledAt) => { schedulePost(scheduledAt); setModal(null); }}
+            initialScheduledAt={missedSchedule ? post.scheduledAt : undefined}
           />}
           {showAddPlatform && <AddPlatformDialog
             existingPlatforms={selected.posts.map((item) => item.platform)}

@@ -5,16 +5,21 @@ import { CalendarClock, CalendarDays, Check } from "lucide-react";
 import type { Platform } from "@/lib/content-types";
 import { platformLabels, vietnamDateInputValue } from "@/app/content/ui/content-presentation";
 
-export function EditorActionDialog({ mode, platform, onClose, onApprove, onSchedule }: {
+export function EditorActionDialog({ mode, platform, onClose, onApprove, onSchedule, initialScheduledAt }: {
   mode: "approve" | "schedule";
   platform: Platform;
   onClose: () => void;
   onApprove: () => void;
   onSchedule: (scheduledAt: string) => void;
+  initialScheduledAt?: string;
 }) {
+  const initial = initialScheduledAt ? new Date(initialScheduledAt) : null;
+  const initialParts = initial && !Number.isNaN(initial.getTime())
+    ? new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(initial).reduce<Record<string, string>>((result, part) => { if (part.type !== "literal") result[part.type] = part.value; return result; }, {})
+    : null;
   const defaultDate = vietnamDateInputValue(new Date(Date.now() + 86400000));
-  const [date, setDate] = useState(defaultDate);
-  const [time, setTime] = useState("09:30");
+  const [date, setDate] = useState(initialParts ? `${initialParts.year}-${initialParts.month}-${initialParts.day}` : defaultDate);
+  const [time, setTime] = useState(initialParts ? `${initialParts.hour}:${initialParts.minute}` : "09:30");
   const [timePickerOpen, setTimePickerOpen] = useState(false);
   const [draftHour, setDraftHour] = useState("09");
   const [draftMinute, setDraftMinute] = useState("30");
@@ -55,7 +60,7 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
           </div>
         </> : <>
           <div className="modal-icon schedule-icon"><CalendarClock size={20} /></div>
-          <h2 id="modal-title">Lên lịch đăng bài</h2>
+          <h2 id="modal-title">{initialScheduledAt ? "Đổi lịch đăng bài" : "Lên lịch đăng bài"}</h2>
           <p>Chọn thời gian đăng cho bài {platformLabels[platform]}.</p>
           <div className="schedule-fields">
             <label>Ngày đăng<input type="date" min={vietnamDateInputValue()} value={date} onChange={(event) => setDate(event.target.value)} /></label>
@@ -98,7 +103,7 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
           {error && <p className="modal-error" role="alert">{error}</p>}
           <div className="modal-actions">
             <button className="secondary" onClick={onClose}>Hủy</button>
-            <button className="primary" onClick={confirmSchedule}><CalendarClock size={15} /> Xác nhận lên lịch</button>
+            <button className="primary" onClick={confirmSchedule}><CalendarClock size={15} /> {initialScheduledAt ? "Cập nhật lịch" : "Xác nhận lên lịch"}</button>
           </div>
         </>}
       </section>

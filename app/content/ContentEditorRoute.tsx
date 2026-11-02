@@ -75,7 +75,8 @@ export default function ContentEditorRoute({ id }: { id: string }) {
 
   function schedulePost(scheduledAt: string) {
     const post = content?.posts.find((item) => item.platform === platform);
-    if (content && post?.status === "approved") updatePost(content.id, post.id, { status: "scheduled", scheduledAt });
+    if (content && post && (post.status === "approved" || (post.status === "scheduled" && post.scheduledAt && new Date(post.scheduledAt) <= new Date())))
+      updatePost(content.id, post.id, { status: "scheduled", scheduledAt });
   }
 
   if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;

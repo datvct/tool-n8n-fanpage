@@ -136,7 +136,10 @@ export async function PATCH(
         { success: false, error: "Bài đã lên lịch hoặc đã đăng nên không thể sửa nội dung." },
         { status: 409 },
       );
-    if (body.status === "scheduled" && !["approved", "failed"].includes(current.status))
+    const isMissedScheduleRetry = current.status === "scheduled"
+      && Boolean(current.scheduledAt && current.scheduledAt <= new Date())
+      && body.status === "scheduled";
+    if (body.status === "scheduled" && !["approved", "failed"].includes(current.status) && !isMissedScheduleRetry)
       return NextResponse.json(
         { success: false, error: "Chỉ bài đã duyệt hoặc đăng lỗi mới có thể được lên lịch." },
         { status: 409 },
@@ -151,13 +154,8 @@ export async function PATCH(
         { success: false, error: "Bài đã lên lịch hoặc đã đăng không thể chuyển về bản nháp." },
         { status: 409 },
       );
-    if (current.status === "scheduled" && body.status === "scheduled")
-      return NextResponse.json(
-        { success: false, error: "Bài đã có lịch đăng. Hãy hủy lịch cũ trước khi xếp lịch lại." },
-        { status: 409 },
-      );
     if (current.platform === "tiktok") {
-      if (["published", "publishing", "scheduled"].includes(current.status))
+      if (["published", "publishing"].includes(current.status) || (current.status === "scheduled" && !isMissedScheduleRetry))
         return NextResponse.json({ success: false, error: "Bài TikTok đã được gửi đăng; không thể sửa hoặc gửi lại." }, { status: 409 });
       if ((data.content ?? current.content).length > 2200)
         return NextResponse.json({ success: false, error: "Caption TikTok tối đa 2.200 ký tự." }, { status: 400 });
@@ -172,7 +170,7 @@ export async function PATCH(
         if (videos.length !== 1)
           return NextResponse.json({ success: false, error: "Mỗi bài TikTok cần đúng một video." }, { status: 400 });
       }
-      if (body.status === "scheduled" && current.status !== "approved")
+      if (body.status === "scheduled" && current.status !== "approved" && !isMissedScheduleRetry)
         return NextResponse.json({ success: false, error: "Cần duyệt bài TikTok trước khi lên lịch." }, { status: 400 });
     }
     if (body.status === "scheduled") {

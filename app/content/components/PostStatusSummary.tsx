@@ -19,7 +19,9 @@ export function PostStatusSummary({ post, platform, hasPost }: { post: SocialPos
                 {hasPost ? statusLabels[status] : "Chưa có nội dung"}
               </strong>
               <p>
-                {status === "scheduled" && post.error
+                {status === "scheduled" && post.scheduledAt && new Date(post.scheduledAt).getTime() <= Date.now()
+                  ? `${post.error ? `${post.error} · ` : ""}Đã quá giờ đăng; bạn có thể đổi lịch để gửi lại.`
+                  : status === "scheduled" && post.error
                   ? post.error
                   : status === "scheduled" && post.scheduledAt
                     ? `Đã lên lịch đăng lúc ${formatVietnamDateTime(post.scheduledAt)}`
