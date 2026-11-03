@@ -1,5 +1,5 @@
 const SESSION_COOKIE = "content_flow_session";
-const SESSION_TTL_SECONDS = 60 * 60 * 12;
+const SESSION_TTL_SECONDS = 60 * 60 * 24;
 
 function toBase64Url(bytes: Uint8Array) {
   let binary = "";

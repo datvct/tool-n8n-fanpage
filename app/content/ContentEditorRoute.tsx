@@ -1,28 +1,37 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Spin } from "antd";
+import { useRouter } from "next/navigation";
+import { CircleAlert } from "lucide-react";
 import { ContentEditor } from "@/app/content/components/ContentEditor";
 import type { ContentItem, Platform, PostType, SocialPost } from "@/lib/content-types";
+import { getContentTitle } from "@/app/content/ui/content-presentation";
+import { WorkspaceHeader } from "@/app/content/components/WorkspaceHeader";
+import { useWorkspaceLoading } from "@/app/content/WorkspaceLayout";
 
-export default function ContentEditorRoute({ id }: { id: string }) {
+export default function ContentEditorRoute({ id, initialPlatform, returnTo = "/" }: { id: string; initialPlatform?: Platform; returnTo?: string }) {
+  const router = useRouter();
+  const setWorkspaceLoading = useWorkspaceLoading();
   const [content, setContent] = useState<ContentItem | null>(null);
-  const [platform, setPlatform] = useState<Platform>("facebook");
+  const [platform, setPlatform] = useState<Platform>(initialPlatform ?? "facebook");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setWorkspaceLoading(true);
     fetch(`/api/contents/${id}`, { cache: "no-store" })
       .then(async (response) => {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.error);
         const item = result.data as ContentItem;
         setContent(item);
-        if (item.posts[0]) setPlatform(item.posts[0].platform);
+        if (initialPlatform && item.posts.some((post) => post.platform === initialPlatform)) setPlatform(initialPlatform);
+        else if (item.posts[0]) setPlatform(item.posts[0].platform);
       })
       .catch((reason) =>
         setError(reason instanceof Error ? reason.message : "Không thể tải nội dung."),
-      );
-  }, [id]);
+      )
+      .finally(() => setWorkspaceLoading(false));
+  }, [id, initialPlatform, setWorkspaceLoading]);
 
   async function updatePost(_contentId: string, postId: string, update: Partial<SocialPost>): Promise<boolean> {
     const previousPost = content?.posts.find((post) => post.id === postId);
@@ -92,8 +101,36 @@ export default function ContentEditorRoute({ id }: { id: string }) {
     return false;
   }
 
-  if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
-  if (!content) return <main className="shared-page"><Spin size="large" /></main>;
-
-  return <>{error && <div className="shared-error" role="alert">{error}</div>}<ContentEditor selected={content} platform={platform} setPlatform={setPlatform} onBack={() => window.location.assign("/")} onDeleted={() => window.location.assign("/")} updatePost={updatePost} approvePost={approvePost} schedulePost={schedulePost} createPlatformPost={createPlatformPost} /></>;
+  const goBack = () => {
+    if (window.history.length > 1) router.back();
+    else router.push(returnTo);
+  };
+  return (
+    <>
+        <WorkspaceHeader
+          title={content ? "Chi tiết bài viết" : "Đang mở bài viết"}
+          description={content ? `${content.employee} · ${getContentTitle(content)}` : "Đang tải nội dung bài viết."}
+          refreshing={false}
+          loading={!content}
+          lastSyncedAt={null}
+          onRefresh={() => window.location.reload()}
+          compact
+        />
+        {error && <div className="load-error" role="alert"><CircleAlert size={18} /><span>{error}</span></div>}
+        {!content && !error && <div className="route-content-loading">Đang mở bài viết…</div>}
+        {content && (
+          <ContentEditor
+            selected={content}
+            platform={platform}
+            setPlatform={setPlatform}
+            onBack={goBack}
+            onDeleted={() => router.push(returnTo)}
+            updatePost={updatePost}
+            approvePost={approvePost}
+            schedulePost={schedulePost}
+            createPlatformPost={createPlatformPost}
+          />
+        )}
+    </>
+  );
 }

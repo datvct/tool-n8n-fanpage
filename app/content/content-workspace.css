@@ -59,6 +59,7 @@ body {
   min-height: 42px;
   border-radius: 8px;
   font-size: 12px;
+  transition: color .18s ease, background-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 
 .nav button.active,
@@ -2168,5 +2169,56 @@ select:focus-visible {
 @media (max-width: 760px) {
   .pro-textarea {
     min-height: 180px;
+  }
+}
+.workspace-main { min-width: 0; }
+.workspace-route-transition {
+  min-width: 0;
+  animation: workspace-route-enter .22s cubic-bezier(.2,.7,.25,1) both;
+}
+@keyframes workspace-route-enter {
+  from { opacity: 0; transform: translate3d(0, 7px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.route-corner-loading {
+  position: fixed;
+  z-index: 1200;
+  top: 94px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #dfe9e2;
+  border-radius: 999px;
+  color: #246743;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 6px 20px rgba(22,60,42,.12);
+  font-size: 12px;
+  font-weight: 650;
+  animation: route-loading-enter .16s ease-out both;
+}
+.route-corner-loading svg { animation: route-loading-spin .9s linear infinite; }
+@keyframes route-loading-enter {
+  from { opacity: 0; transform: translate3d(0,-4px,0); }
+  to { opacity: 1; transform: translate3d(0,0,0); }
+}
+@keyframes route-loading-spin { to { transform: rotate(360deg); } }
+.route-content-loading {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 13px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-route-transition,
+  .route-corner-loading,
+  .route-corner-loading svg,
+  .nav button {
+    animation: none !important;
+    transition: none !important;
   }
 }

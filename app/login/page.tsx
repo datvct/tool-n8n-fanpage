@@ -20,7 +20,13 @@ export default function LoginPage() {
       body: JSON.stringify({ password }),
     });
     const result = await response.json().catch(() => null);
-    if (response.ok) router.replace("/");
+    if (response.ok) {
+      const requestedPath = new URLSearchParams(window.location.search).get("next");
+      const destination = requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
+        ? requestedPath
+        : "/";
+      router.replace(destination);
+    }
     else setError(result?.error || "Không thể đăng nhập.");
     setLoading(false);
   }

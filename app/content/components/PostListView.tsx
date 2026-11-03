@@ -42,9 +42,25 @@ export function PostListView({
           </thead>
           <tbody>
             {posts.map((post) => (
-              <tr key={post.id}>
+              <tr
+                key={post.id}
+                className="clickable"
+                tabIndex={0}
+                aria-label={`Mở bài đăng ${getPostDisplayTitle(post)}`}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest("button, a, summary, input, select, textarea")) return;
+                  onOpen(post.contentId, post.platform);
+                }}
+                onKeyDown={(event) => {
+                  if (event.target !== event.currentTarget) return;
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onOpen(post.contentId, post.platform);
+                  }
+                }}
+              >
                 <td><span className="table-platform"><PlatformIcon platform={post.platform} />{platformLabels[post.platform]}</span></td>
-                <td><button className="content-link" onClick={() => onOpen(post.contentId, post.platform)}>{truncateText(getPostDisplayTitle(post), 55)}</button></td>
+                <td><button className="content-link" onClick={(event) => { event.stopPropagation(); onOpen(post.contentId, post.platform); }}>{truncateText(getPostDisplayTitle(post), 55)}</button></td>
                 <td>{post.employee}</td>
                 <td>
                   <StatusBadge status={post.status} />
