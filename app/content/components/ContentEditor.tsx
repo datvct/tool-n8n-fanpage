@@ -47,7 +47,7 @@ export function ContentEditor({
     update: Partial<SocialPost>,
   ) => Promise<boolean>;
   approvePost: () => void;
-  schedulePost: (scheduledAt: string) => void;
+  schedulePost: (scheduledAt: string) => void | Promise<boolean>;
   createPlatformPost: (
     contentId: string,
     platform: Platform,
@@ -298,7 +298,11 @@ export function ContentEditor({
             platform={platform}
             onClose={() => setModal(null)}
             onApprove={() => { approvePost(); setModal(null); }}
-            onSchedule={(scheduledAt) => { schedulePost(scheduledAt); setModal(null); }}
+            onSchedule={async (scheduledAt) => {
+              const succeeded = await schedulePost(scheduledAt);
+              if (succeeded !== false) setModal(null);
+              return succeeded !== false;
+            }}
             initialScheduledAt={missedSchedule ? post.scheduledAt : undefined}
           />}
           {showAddPlatform && <AddPlatformDialog

@@ -257,6 +257,14 @@ export async function PATCH(
             responseText,
             webhookUrl,
           });
+          const schedulerError = `Lịch mới đã lưu nhưng n8n từ chối yêu cầu (${webhookResponse.status}).`;
+          if (isMissedScheduleRetry) {
+            const savedPost = await prisma.socialPost.update({
+              where: { id: post.id, status: "scheduled", scheduledAt: post.scheduledAt },
+              data: { errorMessage: schedulerError },
+            });
+            return NextResponse.json({ success: true, data: savedPost, warning: schedulerError });
+          }
           await prisma.socialPost.updateMany({
             where: { id: post.id, status: "scheduled", scheduledAt: post.scheduledAt },
             data: {

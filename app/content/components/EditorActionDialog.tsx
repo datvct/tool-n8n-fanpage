@@ -10,7 +10,7 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
   platform: Platform;
   onClose: () => void;
   onApprove: () => void;
-  onSchedule: (scheduledAt: string) => void;
+  onSchedule: (scheduledAt: string) => void | boolean | Promise<void | boolean>;
   initialScheduledAt?: string;
 }) {
   const initial = initialScheduledAt ? new Date(initialScheduledAt) : null;
@@ -24,6 +24,7 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
   const [draftHour, setDraftHour] = useState("09");
   const [draftMinute, setDraftMinute] = useState("30");
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   function openTimePicker() {
     const [hour, minute] = time.split(":");
@@ -38,13 +39,23 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
     setError("");
   }
 
-  function confirmSchedule() {
+  async function confirmSchedule() {
+    if (saving) return;
     const value = new Date(`${date}T${time}:00+07:00`);
     if (!date || !time || Number.isNaN(value.getTime()) || value <= new Date()) {
       setError("Vui lòng chọn thời gian ở tương lai.");
       return;
     }
-    onSchedule(`${date} ${time}`);
+    setSaving(true);
+    setError("");
+    try {
+      const succeeded = await onSchedule(`${date} ${time}`);
+      if (succeeded === false) setError("Chưa cập nhật được lịch. Hãy kiểm tra thông báo lỗi rồi thử lại.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Không thể cập nhật lịch.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -102,8 +113,8 @@ export function EditorActionDialog({ mode, platform, onClose, onApprove, onSched
           <div className="timezone-note"><CalendarDays size={14} /> Múi giờ: Asia/Ho_Chi_Minh</div>
           {error && <p className="modal-error" role="alert">{error}</p>}
           <div className="modal-actions">
-            <button className="secondary" onClick={onClose}>Hủy</button>
-            <button className="primary" onClick={confirmSchedule}><CalendarClock size={15} /> {initialScheduledAt ? "Cập nhật lịch" : "Xác nhận lên lịch"}</button>
+            <button className="secondary" onClick={onClose} disabled={saving}>Hủy</button>
+            <button className="primary" onClick={confirmSchedule} disabled={saving}><CalendarClock size={15} /> {saving ? "Đang cập nhật…" : initialScheduledAt ? "Cập nhật lịch" : "Xác nhận lên lịch"}</button>
           </div>
         </>}
       </section>

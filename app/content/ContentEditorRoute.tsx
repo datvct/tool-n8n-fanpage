@@ -25,6 +25,8 @@ export default function ContentEditorRoute({ id }: { id: string }) {
   }, [id]);
 
   async function updatePost(_contentId: string, postId: string, update: Partial<SocialPost>): Promise<boolean> {
+    const previousPost = content?.posts.find((post) => post.id === postId);
+    setError("");
     setContent((current) =>
       current
         ? { ...current, posts: current.posts.map((post) => post.id === postId ? { ...post, ...update } : post) }
@@ -36,13 +38,23 @@ export default function ContentEditorRoute({ id }: { id: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(update),
       });
+      const result = await response.json().catch(() => null);
       if (!response.ok) {
-        const result = await response.json().catch(() => null);
+        if (previousPost) setContent((current) => current ? { ...current, posts: current.posts.map((post) => post.id === postId ? previousPost : post) } : current);
         setError(result?.error || "Không thể lưu thay đổi.");
         return false;
       }
+      if (result?.data) {
+        setContent((current) => current ? { ...current, posts: current.posts.map((post) => post.id === postId ? {
+          ...post,
+          status: result.data.status,
+          scheduledAt: result.data.scheduledAt?.toString?.() ?? (result.data.scheduledAt ? new Date(result.data.scheduledAt).toISOString() : undefined),
+          error: result.data.errorMessage ?? undefined,
+        } : post) } : current);
+      }
       return true;
     } catch {
+      if (previousPost) setContent((current) => current ? { ...current, posts: current.posts.map((post) => post.id === postId ? previousPost : post) } : current);
       setError("Không thể kết nối để lưu thay đổi. Hãy tải lại trang trước khi tiếp tục.");
       return false;
     }
@@ -73,10 +85,11 @@ export default function ContentEditorRoute({ id }: { id: string }) {
     if (content && post?.content.trim()) updatePost(content.id, post.id, { status: "approved", error: undefined });
   }
 
-  function schedulePost(scheduledAt: string) {
+  async function schedulePost(scheduledAt: string): Promise<boolean> {
     const post = content?.posts.find((item) => item.platform === platform);
     if (content && post && (post.status === "approved" || (post.status === "scheduled" && post.scheduledAt && new Date(post.scheduledAt) <= new Date())))
-      updatePost(content.id, post.id, { status: "scheduled", scheduledAt });
+      return updatePost(content.id, post.id, { status: "scheduled", scheduledAt });
+    return false;
   }
 
   if (error && !content) return <main className="shared-page"><div className="shared-error">{error}</div></main>;
